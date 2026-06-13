@@ -40,7 +40,7 @@ def test_multiline_title_with_dashes_not_split(tmp_path):
     # (author/url/interaction_time) is orphaned into the body.
     art = (
         '---\n'
-        'title: ""Deep Learning"\n'
+        'title: "“Deep Learning”\n'
         '------大总结"\n'
         'author: "计算机视觉研究院"\n'
         'interaction_time: "2016-10-27T00:27:54.282000+00:00"\n'
