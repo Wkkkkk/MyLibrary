@@ -1,0 +1,56 @@
+# knowledge-library config — copy to config.yaml and fill in.
+# Paths support ~ expansion.
+
+# REQUIRED -----------------------------------------------------------------
+corpus_path: ~/Obsidian/知乎收藏        # the inbox / source vault (was schema.VAULT)
+library_path: ~/Obsidian/知乎收藏_v2     # the materialized output vault
+data_dir: ./data                        # TSV state (labels, topics, manifest, runs)
+
+# The primary_category canon — ENGLISH-CANONICAL (spec §4b). Locked after the
+# pilot. The labeling agent reads Chinese article bodies and emits these names.
+categories:
+  - Technology & Internet
+  - Programming & Software Engineering
+  - AI & Machine Learning
+  - Science & Engineering
+  - Economics & Business
+  - Society, Politics & Public Affairs
+  - Language Learning
+  - Education & Learning
+  - Productivity & Tools
+  - Literature
+  - History & Humanities
+  - Film, Anime & Pop Culture
+  - Psychology, Relationships & Self-growth
+  - Lifestyle
+  - Art & Design
+
+# LANGUAGE (spec §4b) ------------------------------------------------------
+label_language: en                       # canon language for the controlled vocab
+# Display names per language, applied only by `materialize --lang zh`.
+# Categories map here; topics carry their display name in the registry's
+# name_zh column. Article bodies and summaries are never translated.
+category_localization:
+  Technology & Internet: {zh: 技术与互联网}
+  Programming & Software Engineering: {zh: 编程与软件工程}
+  AI & Machine Learning: {zh: AI与机器学习}
+  Science & Engineering: {zh: 科学与工程知识}
+  Economics & Business: {zh: 经济与商业}
+  Society, Politics & Public Affairs: {zh: 社会政治与公共议题}
+  Language Learning: {zh: 语言学习}
+  Education & Learning: {zh: 教育与学习}
+  Productivity & Tools: {zh: 效率与工具}
+  Literature: {zh: 文学}
+  History & Humanities: {zh: 历史人文}
+  Film, Anime & Pop Culture: {zh: 影视动漫与流行文化}
+  Psychology, Relationships & Self-growth: {zh: 心理关系与自我成长}
+  Lifestyle: {zh: 生活方式}
+  Art & Design: {zh: 艺术与设计}
+
+# OPTIONAL (defaults shown) ------------------------------------------------
+hub_dir: _topics                         # topic hub-note folder in the vault
+skip_dirs: [_images, 分类视图, 话题, _topics]
+hub_min_articles: 3                      # min articles before a topic gets a hub
+topic_split_threshold: 40                # topic size that flags a split candidate
+batch_size: 30                           # articles per labeling batch
+generated_marker: "generated: knowledge-library"
