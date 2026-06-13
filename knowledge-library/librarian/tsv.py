@@ -35,6 +35,7 @@ def write_rows(path, header, rows):
             if "\t" in f or "\n" in f or "\r" in f:
                 raise ValueError(f"{path}: tab/newline/carriage-return inside field: {f[:50]!r}")
     out = ["\t".join(header)] + ["\t".join(r) for r in rows]
+    path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text("\n".join(out) + "\n", encoding="utf-8")
     os.replace(tmp, path)

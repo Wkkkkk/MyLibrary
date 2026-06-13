@@ -96,3 +96,20 @@ def test_proposed_topic_is_recorded_and_reported(cfg, tmp_path):
     assert "新话题" not in reg.active_names()
     # ingest must not persist the registry — that is a gate action, not ingest's job
     assert not cfg.topics_path.exists()
+
+
+def test_first_seen_run_is_stamped(cfg, tmp_path):
+    cfg = _cfg(cfg)
+    jp = _write_json(tmp_path, [_judgment()])
+    ingest_wave.ingest([jp], MANIFEST, {}, _reg(tmp_path), cfg, "2026-06-13",
+                       run_id="run-7")
+    fsr = contract.LABEL_COLUMNS.index("first_seen_run")
+    assert store.load(cfg.labels_path)[0][fsr] == "run-7"
+
+
+def test_first_seen_run_defaults_to_empty(cfg, tmp_path):
+    cfg = _cfg(cfg)
+    jp = _write_json(tmp_path, [_judgment()])
+    ingest_wave.ingest([jp], MANIFEST, {}, _reg(tmp_path), cfg, "2026-06-13")
+    fsr = contract.LABEL_COLUMNS.index("first_seen_run")
+    assert store.load(cfg.labels_path)[0][fsr] == ""

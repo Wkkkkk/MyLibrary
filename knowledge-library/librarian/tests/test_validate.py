@@ -11,7 +11,7 @@ def reg(tmp_path):
 def row(rel="文学/a.md", primary="文学", topics="文学评论", proposed="",
         conf="high", review="false"):
     return [rel, "t", "旧类", primary, topics, "tag1", "文学评论", "摘要。",
-            conf, review, "", proposed, "h" * 16, "v1", "2026-06-11"]
+            conf, review, "", proposed, "h" * 16, "v1", "2026-06-11", ""]
 
 def test_good_row_passes(tmp_path):
     rows, errors = validate.check([row()], ["文学/a.md"], reg(tmp_path), {"文学"})

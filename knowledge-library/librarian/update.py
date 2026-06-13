@@ -5,6 +5,7 @@
   python3 -m librarian.update ingest F
   python3 -m librarian.update materialize [--write]
   python3 -m librarian.update verify
+  python3 -m librarian.update status
 """
 import shutil
 import sys
@@ -31,7 +32,7 @@ def _manifest_rows():
 
 def load_legacy(path):
     """Read the v1 labels TSV → {relative_path: (primary_categories, subcategories)}.
-    Returns {} if the file is missing. v1 schema differs from mybooks, so this
+    Returns {} if the file is missing. v1 schema differs from the v2 contract, so this
     reads raw rather than via tsv.read_rows."""
     if not path.exists():
         return {}
@@ -245,6 +246,11 @@ def cmd_verify(library=None, lang="en"):
     sys.exit(1 if problems else 0)
 
 
+def cmd_status():
+    from librarian import status
+    print(status.render(cfg))
+
+
 def _opt(flag):
     """Return the value following `flag` in argv, or None."""
     if flag in sys.argv:
@@ -269,7 +275,8 @@ if __name__ == "__main__":
                 "verify": lambda: cmd_verify(library=lib, lang=lang),
                 "materialize": lambda: cmd_materialize("--write" in sys.argv, out=lib, lang=lang),
                 "proposals": lambda: cmd_proposals("--accept" in sys.argv),
-                "ingest": lambda: cmd_ingest(sys.argv[2], library=lib)}
+                "ingest": lambda: cmd_ingest(sys.argv[2], library=lib),
+                "status": lambda: cmd_status()}
     if cmd not in handlers:
         sys.exit(f"unknown command {cmd!r}; choose from {', '.join(handlers)}")
     handlers[cmd]()

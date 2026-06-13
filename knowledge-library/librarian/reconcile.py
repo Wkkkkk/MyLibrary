@@ -3,7 +3,7 @@
 The v2 library was built by the original full materialization, which re-filed
 articles into <primary_category>/ folders and resolved basename collisions with
 _N suffixes — a mapping recorded only in migration_log_newfolder.tsv. To let the
-mybooks.update --out <v2> flow describe v2 directly, each label's relative_path
+update --out <v2> flow describe v2 directly, each label's relative_path
 is translated to its actual v2 location via that map.
 """
 

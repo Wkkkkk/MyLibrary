@@ -11,7 +11,7 @@ def reg(tmp_path):
 
 def lrow(rel, primary="文学", topics="文学评论"):
     return [rel, "", "", primary, topics, "", "", "s", "high", "false", "",
-            "", "h" * 16, "v1", "d"]
+            "", "h" * 16, "v1", "d", ""]
 
 def make_vault(tmp_path, rels):
     v = tmp_path / "vault"
@@ -151,7 +151,7 @@ def test_lang_zh_localized_vault_verifies_clean(tmp_path):
               f"# 文学评论\n\n## 阅读清单 (1)\n\n- [[a]] — s\n", cfg)
     # label row: canonical primary Literature + canonical topic Lit Crit
     lr = ["文学/a.md", "", "", "Literature", "Lit Crit", "", "", "s",
-          "high", "false", "", "", "h" * 16, "v1", "d"]
+          "high", "false", "", "", "h" * 16, "v1", "d", ""]
     problems = verify.run([lr], reg_zh, v, {"Literature"}, cfg, lang="zh")
     assert problems == [], problems
 
@@ -170,6 +170,6 @@ def test_lang_zh_wrong_localized_folder_flagged(tmp_path):
     reg_zh = registry.load(p)
     v = make_vault(tmp_path, ["历史/a.md"])   # filed under 历史 ...
     lr = ["历史/a.md", "", "", "Literature", "Lit Crit", "", "", "s",   # ... but primary is Literature->文学
-          "high", "false", "", "", "h" * 16, "v1", "d"]
+          "high", "false", "", "", "h" * 16, "v1", "d", ""]
     problems = verify.run([lr], reg_zh, v, {"Literature", "History"}, cfg, lang="zh")
     assert any("folder" in p for p in problems)

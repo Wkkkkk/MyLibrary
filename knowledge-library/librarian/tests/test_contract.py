@@ -3,9 +3,13 @@ from librarian import contract
 
 def test_label_columns_complete_and_ordered():
     assert contract.LABEL_COLUMNS[0] == "relative_path"
-    assert contract.LABEL_COLUMNS[-1] == "labeled_at"
-    assert len(contract.LABEL_COLUMNS) == 15
-    assert len(set(contract.LABEL_COLUMNS)) == 15
+    # first_seen_run is APPENDED last (spec §9 provenance) so positional reads
+    # r[0]..r[14] in store/validate/verify/ingest_wave stay unchanged; labeled_at
+    # is now second-to-last.
+    assert contract.LABEL_COLUMNS[-2] == "labeled_at"
+    assert contract.LABEL_COLUMNS[-1] == "first_seen_run"
+    assert len(contract.LABEL_COLUMNS) == 16
+    assert len(set(contract.LABEL_COLUMNS)) == 16
 
 
 def test_manifest_and_topic_columns():
