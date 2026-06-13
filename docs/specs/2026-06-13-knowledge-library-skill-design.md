@@ -1,7 +1,7 @@
 # Design: `knowledge-library` skill
 
 **Date:** 2026-06-13
-**Status:** Approved design — pending implementation plan
+**Status:** Approved design — Plan 1 written. **Amended 2026-06-13:** added §4b (Language & localization — English-canonical vocab, Chinese display).
 **Origin:** Abstracted from the MyBooks project (`~/workspace/playground/mybooks`), which labeled and materialized the 知乎收藏 vault (2095 articles, 86 topics) into a clean library-model Obsidian vault.
 
 ---
@@ -76,10 +76,11 @@ knowledge-library/                 # the skill
 Everything currently hardcoded in `mybooks/schema.py` becomes config:
 
 - `corpus_path` (inbox) and `library_path` (output vault)
-- locked `categories` list (the primary_category canon)
+- locked `categories` list (the primary_category canon — **English-canonical**, see §4b)
 - `hub_dir`, `hub_min_articles`, `split_threshold`, `skip_dirs`
 - topics delimiter, NFC normalization on/off
 - labeling knobs: agents-per-wave, articles-per-agent, model
+- `label_language` (canon language for the controlled vocabulary; default `en`) and `category_localization` (`{<English canonical>: {zh: <中文>}}` display map) — see §4b
 - per-source frontmatter import-field mapping (worked example: Zhihu — see §6)
 
 ### Normalized-node contract (adapter output)
@@ -96,6 +97,30 @@ Every adapter's only job is to map a source into this shape. This is the extensi
 
 ---
 
+## 4b. Language & localization (English-canonical, Chinese-display)
+
+The corpus is predominantly Chinese, but the controlled vocabulary is **English-canonical**: the labeling agent reads native-language article bodies and emits English `primary_category` / `topics` / `tags` / `article_type`. Chinese (or any target language) is a **display localization** applied only at materialize. Article bodies and the free-text `summary` stay in the source language — never translated.
+
+**Two layers:**
+
+1. **Canonical identity (one language, English).** What agents emit; what's stored in the labels TSV + topic registry; what `validate` / `registry.resolve` / proposals dedupe against. Article-level dedup is by `url` (language-neutral) and is unaffected.
+2. **Display rendering (per-run choice).** Chosen at materialize with `--lang en|zh` — **no config default**; `en` renders the canon verbatim (zero lookup) and is the no-flag fallback, `zh` looks up the localized name. Drives folder names, hub-note filenames, and hub-note section headers (`阅读清单`, `相关话题`, …).
+
+**Where localization lives:**
+- **Categories:** `config.category_localization` — a `{<English canonical>: {zh: <中文>}}` map. `config.categories` stays the canonical English set that `validate` checks against.
+- **Topics:** a `name_zh` column **appended** to `TOPIC_COLUMNS` (appended so existing positional reads in `registry`/`proposals` are unchanged), holding the Chinese display name beside the canonical English `name`. Generalizes to more languages by adding columns; kept to `zh` for now (YAGNI).
+- **Summary:** native source language; not localized, not part of the canon.
+
+**Effect on classification:** cross-lingual labeling (read Chinese → emit English canon) is reliable for a capable model; the standing risk is English topic drift (`ML` vs `Machine Learning`), contained by the existing `registry.resolve()` + the proposals gate. The labeling prompt must instruct: classify into the English canon, propose new topics in English, write the summary in the article's own language.
+
+**Existing data:** this library starts from a **fresh/empty corpus** and builds the English canon during the pilot — no migration of the legacy 86 Chinese MyBooks topics.
+
+**Invariant impact:** `verify`'s "folder matches primary_category" check must compare the on-disk folder against `localize(primary_category, output_lang)`, not the raw canonical string — see §8.
+
+**Build split:** the foundational schema (config `label_language` + `category_localization` + a `localize_category()` helper; contract `name_zh` column) lands in **Plan 1** (it owns `contract.py` + `config.py`). The language-aware rendering (`materialize --lang`; `verify` / `hubgen` / `refile` localization) + the labeling-prompt instruction land with the materialize/labeling plans (Plans 2–3).
+
+---
+
 ## 5. The gated pipeline (SKILL.md workflow — bootstrap mode)
 
 0. **Configure** — fill `config.yaml` + `taxonomy_rules.md`. No canon yet? Derive a starter from the pilot.
@@ -106,7 +131,7 @@ Every adapter's only job is to map a source into this shape. This is the extensi
 5. Finish waves → 100%.
 6. **🚦 GATE 2 — proposals triage** — pause; accept/reject/merge proposed topics; sign-off.
 7. **🚦 GATE 3 — review queue** — pause; resolve `needs_review` to zero; sign-off.
-8. **Materialize (non-destructive)** — frontmatter → category folders (refile) → topic hubs (hubgen) → optional Base view → verify (0 ghosts/0 gaps). Writes a **new** vault; source untouched.
+8. **Materialize (non-destructive)** — frontmatter → category folders (refile) → topic hubs (hubgen) → optional Base view → verify (0 ghosts/0 gaps). Writes a **new** vault; source untouched. **Output language** is per-run: `--lang en` (default, renders the English canon verbatim) or `--lang zh` (localizes folders + hub names + section headers via §4b).
 
 The wave loop's dispatch follows the `dispatching-parallel-agents` pattern.
 
@@ -150,7 +175,8 @@ Idempotent (2nd run = 0 new), non-destructive. LLM cost is bounded to net-new; e
 
 ## 8. Invariants, error handling, lessons carried over
 
-- `validate.check`: exactly one `primary_category` from canon; topics ∈ active canon; **no category-name-in-topics, no article_type-in-topics** (the 3 recurring agent slips); topic names free of `/ \ :`; enum checks (confidence, bool, topic status).
+- `validate.check`: exactly one `primary_category` from canon (the **English** canon, §4b); topics ∈ active canon; **no category-name-in-topics, no article_type-in-topics** (the 3 recurring agent slips); topic names free of `/ \ :`; enum checks (confidence, bool, topic status).
+- **language (§4b):** `validate`/`registry`/proposals operate on the English canonical names; `verify`'s folder-matches-primary invariant compares the on-disk folder against `localize(primary_category, output_lang)`, not the raw canonical string (so a `--lang zh` vault with `文学/` folders verifies against canonical `Literature`).
 - `verify`: 0 ghosts (label without file), 0 gaps (file without label), label-count == manifest.
 - `materialize` refuses to overwrite (non-destructive); `reconcile` refuses to write unless labels close exactly against the library.
 - **NFC-normalize** at every disk↔TSV seam (CJK paths).
