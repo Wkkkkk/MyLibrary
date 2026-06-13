@@ -155,7 +155,7 @@ def cmd_verify(library=None, lang="en"):
 
 
 def cmd_status():
-    from librarian import status
+    from librarian.orchestrate import status
     print(status.render(cfg))
 
 
