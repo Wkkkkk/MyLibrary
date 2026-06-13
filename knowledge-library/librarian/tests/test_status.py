@@ -54,3 +54,14 @@ def test_status_no_topics_file(tmp_path):
     cfg = _cfg(tmp_path)  # no topics.tsv written
     out = status.render(cfg)
     assert "Library: 0 articles · canon 0 topics" in out
+
+
+def test_cmd_status_prints_render(tmp_path, monkeypatch, capsys):
+    from librarian import update
+    cfg = _cfg(tmp_path)
+    _seed_topics(cfg)
+    store.merge(cfg.labels_path, [_lrow("Literature/a.md")])
+    monkeypatch.setattr(update, "cfg", cfg)
+    update.cmd_status()
+    out = capsys.readouterr().out
+    assert "Library: 1 articles · canon 1 topics" in out
