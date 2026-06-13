@@ -6,6 +6,9 @@ the assignments — ingest_wave later collects the results."""
 import unicodedata
 from librarian import manifest, registry, store
 
+# Human-readable names for the canon language code, for the labeling prompt.
+LANGUAGE_NAMES = {"en": "English", "zh": "Chinese"}
+
 
 def select(manifest_rows, labeled_paths, limit):
     """The first `limit` manifest rows whose relative_path is not yet labeled.
@@ -32,11 +35,11 @@ def canon_line(reg):
     return "; ".join(sorted(reg.active_names()))
 
 
-def _agent_file(wave_no, agent_no, rows, legacy_nfc, canon, vault):
+def _agent_file(wave_no, agent_no, rows, legacy_nfc, canon, vault, canon_lang):
     out = [f"# Labeling — wave {wave_no}, agent {agent_no} ({len(rows)} articles)\n",
            "Read each article's FULL text at source_path. Classify into the "
-           "active canon below; propose new topics (in the canon language) only "
-           "when nothing fits. Write the summary in the article's own language.\n",
+           f"active canon below; propose new topics in {canon_lang} only when "
+           "nothing fits. Write the summary in the article's own language.\n",
            f"\nActive topics: {canon or '(none yet — seed the canon)'}\n"]
     for j, r in enumerate(rows, start=1):
         rel, title = r[0], r[1]
@@ -62,8 +65,9 @@ def build(manifest_rows, labeled_paths, reg, legacy, out_dir, vault, cfg, wave_n
     canon = canon_line(reg)
     files = []
     for ai, slice_rows in enumerate(assignments(rows, cfg.agents_per_wave), start=1):
+        canon_lang = LANGUAGE_NAMES.get(cfg.label_language, cfg.label_language)
         p = out_dir / f"wave{wave_no:02d}_agent{ai}.md"
-        p.write_text(_agent_file(wave_no, ai, slice_rows, legacy_nfc, canon, vault),
+        p.write_text(_agent_file(wave_no, ai, slice_rows, legacy_nfc, canon, vault, canon_lang),
                      encoding="utf-8")
         files.append(p)
     return files, canon

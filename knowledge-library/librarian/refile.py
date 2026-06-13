@@ -13,18 +13,20 @@ def _resolve_name(target_basename, existing_names):
     return None
 
 
-def plan(label_rows, vault):
+def plan(label_rows, vault, cfg, lang="en"):
+    def folder_of(r):
+        return cfg.localize_category(r[3], lang)
     taken = set()
     for r in label_rows:  # pass 1: in-place rows claim their names first
         base = r[0].rsplit("/", 1)[-1]
-        if r[0] == f"{r[3]}/{base}":
+        if r[0] == f"{folder_of(r)}/{base}":
             taken.add(r[0])
     # seed `taken` with the actual on-disk contents of every target folder so a
     # pre-existing file NOT in label_rows can never be clobbered by a mover.
     # A mover's own source file vacates its slot, so it must not block itself:
     # exclude every row's current path (NFC) from the seeded set.
     own = {unicodedata.normalize("NFC", r[0]) for r in label_rows}
-    for category in {r[3] for r in label_rows}:
+    for category in {folder_of(r) for r in label_rows}:
         folder = vault / category
         if folder.exists():
             for entry in os.listdir(folder):
@@ -35,12 +37,12 @@ def plan(label_rows, vault):
     for r in label_rows:
         base = r[0].rsplit("/", 1)[-1]
         stem, ext = os.path.splitext(base)
-        new_rel = f"{r[3]}/{base}"
+        new_rel = f"{folder_of(r)}/{base}"
         if r[0] == new_rel:
             continue
         n = 2
         while new_rel in taken:
-            new_rel = f"{r[3]}/{stem}_{n}{ext}"
+            new_rel = f"{folder_of(r)}/{stem}_{n}{ext}"
             n += 1
         taken.add(new_rel)
         moves.append((r[0], new_rel, r))

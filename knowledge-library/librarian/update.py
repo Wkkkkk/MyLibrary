@@ -116,13 +116,13 @@ def cmd_ingest(out_tsv, library=None):
     print(f"merged {len(rows)} rows; manifest refreshed ({date.today()})")
 
 
-def cmd_materialize(write=False, out=None):
+def cmd_materialize(write=False, out=None, lang="en"):
     rows = store.load(cfg.labels_path)
     reg = registry.load(cfg.topics_path)
     if out is not None and out != cfg.corpus_path:
-        return _materialize_to_library(rows, reg, out, write)
-    moves = refile.plan(rows, cfg.corpus_path)
-    plans = hubgen.plan(rows, reg, cfg.corpus_path, cfg)
+        return _materialize_to_library(rows, reg, out, write, lang)
+    moves = refile.plan(rows, cfg.corpus_path, cfg, lang)
+    plans = hubgen.plan(rows, reg, cfg.corpus_path, cfg, lang)
     print(f"would move {len(moves)} files, write {len(plans)} hub notes")
     if not write:
         print("dry run; pass --write")
@@ -161,7 +161,7 @@ def _free_dest(library, primary, base, url, taken):
     return rel
 
 
-def _materialize_to_library(rows, reg, library, write):
+def _materialize_to_library(rows, reg, library, write, lang="en"):
     """Materialize labels into a separate library vault (e.g. 知乎收藏_v2).
 
     Each labeled article is copied from the inbox (cfg.corpus_path) into
@@ -169,10 +169,15 @@ def _materialize_to_library(rows, reg, library, write):
     the inbox original is removed (move semantics). Idempotent: on a re-run the
     inbox source is already gone, so it just refreshes the library in place.
     The labels TSV and manifest become library-relative.
+
+    Single display language per library: `lang` must match the language used on
+    the initial materialize — the idempotent re-run path keeps each article at
+    its already-localized path, so switching lang on a populated library would
+    leave folders disagreeing with their canonical primary_category.
     """
     src_paths = [r[0] for r in rows]
     if not write:
-        plans = hubgen.plan(rows, reg, library, cfg)
+        plans = hubgen.plan(rows, reg, library, cfg, lang)
         print(f"would copy {len(rows)} files into {library}, write {len(plans)} hub notes")
         print("dry run; pass --write")
         return
@@ -182,7 +187,8 @@ def _materialize_to_library(rows, reg, library, write):
         if not src.exists() and (library / r[0]).exists():
             dst_rel = r[0]  # idempotent re-run: already at its final library path
         else:
-            dst_rel = _free_dest(library, r[3], r[0].rsplit("/", 1)[-1],
+            dst_rel = _free_dest(library, cfg.localize_category(r[3], lang),
+                                 r[0].rsplit("/", 1)[-1],
                                  manifest.read_url(src), taken)
         taken.add(dst_rel)
         dst = library / dst_rel
@@ -193,7 +199,7 @@ def _materialize_to_library(rows, reg, library, write):
         else:
             assert dst.exists(), (r[0], dst_rel)
         r[0] = dst_rel
-    plans = hubgen.plan(rows, reg, library, cfg)  # plan against the final paths
+    plans = hubgen.plan(rows, reg, library, cfg, lang)  # plan against the final paths
     skipped = hubgen.apply(plans, library, cfg)
     stats = {}
     for r in rows:
@@ -220,7 +226,7 @@ def cmd_proposals(accept=False):
         print(f"accepted {len(pend)} proposal(s) into {cfg.topics_path}; re-run materialize + verify")
 
 
-def verify_problems(library=None):
+def verify_problems(library=None, lang="en"):
     """Run the invariant checks against the library (defaults to cfg.corpus_path for
     the legacy single-vault mode). Returns the list of problems."""
     vault = library if library is not None else cfg.corpus_path
@@ -228,12 +234,12 @@ def verify_problems(library=None):
     reg = registry.load(cfg.topics_path)
     if cfg.manifest_path.exists():
         return verify.run(rows, reg, vault, cfg.categories, cfg,
-                          manifest_rows=_manifest_rows())
-    return verify.run(rows, reg, vault, cfg.categories, cfg)
+                          manifest_rows=_manifest_rows(), lang=lang)
+    return verify.run(rows, reg, vault, cfg.categories, cfg, lang=lang)
 
 
-def cmd_verify(library=None):
-    problems = verify_problems(library=library)
+def cmd_verify(library=None, lang="en"):
+    problems = verify_problems(library=library, lang=lang)
     print("\n".join(problems) if problems else "all invariants green")
     print(audit.report(store.load(cfg.labels_path), cfg)["review_open"], "rows flagged for review")
     sys.exit(1 if problems else 0)
@@ -257,10 +263,11 @@ if __name__ == "__main__":
         sys.exit("usage: python -m librarian.update ingest <out.tsv> [--out <library>]")
     out = _opt("--out")
     lib = Path(out).expanduser() if out else None
+    lang = _opt("--lang") or "en"
     handlers = {"diff": lambda: cmd_diff(library=lib),
                 "queue": lambda: cmd_queue(library=lib),
-                "verify": lambda: cmd_verify(library=lib),
-                "materialize": lambda: cmd_materialize("--write" in sys.argv, out=lib),
+                "verify": lambda: cmd_verify(library=lib, lang=lang),
+                "materialize": lambda: cmd_materialize("--write" in sys.argv, out=lib, lang=lang),
                 "proposals": lambda: cmd_proposals("--accept" in sys.argv),
                 "ingest": lambda: cmd_ingest(sys.argv[2], library=lib)}
     if cmd not in handlers:

@@ -43,6 +43,7 @@ def test_build_writes_one_file_per_agent(cfg, tmp_path):
     text = files[0].read_text(encoding="utf-8")
     assert "wave 1, agent 1" in text
     assert "Active topics: 文学评论" in text
+    assert "in English" in text   # canon language named (cfg.label_language == "en")
     assert "relative_path\tzhihu/a0.md" in text
     assert "original_category\tAI与机器学习" in text
     assert f"source_path\t{cfg.corpus_path}/zhihu/a0.md" in text
