@@ -133,3 +133,69 @@ def test_materialize_refile_refreshes_manifest_to_match_disk(tmp_path, monkeypat
     _, stored = tsv.read_rows(man, contract.MANIFEST_COLUMNS)
     assert {r[0] for r in stored} == {r[0] for r in manifest.build(vault, update.cfg)}
     assert {r[0] for r in stored} == {"历史人文/a.md"}
+
+
+def test_materialize_lang_zh_files_into_localized_folder_and_hub(tmp_path, monkeypatch):
+    vault = tmp_path / "vault"
+    data = tmp_path / "data"
+    data.mkdir()
+    c = config.Config(
+        corpus_path=vault, library_path=vault, data_dir=data,
+        categories={"Literature"}, label_language="en",
+        category_localization={"Literature": {"zh": "文学"}}, hub_min_articles=1)
+    monkeypatch.setattr(update, "cfg", c)
+    # one article, canonical primary "Literature", one active topic with name_zh
+    _article(vault, "inbox/a.md", "Literature")
+    tsv.write_rows(c.topics_path, contract.TOPIC_COLUMNS,
+                   [["T1", "Lit Crit", "", "", "active", "", "", "文学评论"]])
+    row = _lrow("inbox/a.md", "Literature")
+    row[4] = "Lit Crit"           # topics
+    row[7] = "s"                  # summary
+    row[8], row[9] = "high", "false"
+    tsv.write_rows(c.labels_path, contract.LABEL_COLUMNS, [row])
+    tsv.write_rows(c.manifest_path, contract.MANIFEST_COLUMNS, manifest.build(vault, c))
+
+    update.cmd_materialize(write=True, lang="zh")
+
+    # article filed into the localized folder
+    assert (vault / "文学" / "a.md").exists()
+    assert not (vault / "Literature").exists()
+    # hub note named + headed in zh
+    hub = vault / c.hub_dir / "文学评论.md"
+    assert hub.exists()
+    assert "## 阅读清单 (1)" in hub.read_text(encoding="utf-8")
+    # verify the localized vault is clean under the same lang
+    assert update.verify_problems(lang="zh") == []
+
+
+def test_materialize_to_library_lang_zh_localizes_folder(tmp_path, monkeypatch):
+    inbox = tmp_path / "inbox"
+    lib = tmp_path / "lib"
+    data = tmp_path / "data"
+    data.mkdir()
+    lib.mkdir()
+    c = config.Config(
+        corpus_path=inbox, library_path=lib, data_dir=data,
+        categories={"Literature"}, label_language="en",
+        category_localization={"Literature": {"zh": "文学"}}, hub_min_articles=1)
+    monkeypatch.setattr(update, "cfg", c)
+    _article(inbox, "AI/x.md", "Literature")   # arrives under a zhihu-ish folder
+    tsv.write_rows(c.topics_path, contract.TOPIC_COLUMNS,
+                   [["T1", "Lit Crit", "", "", "active", "", "", "文学评论"]])
+    row = _lrow("AI/x.md", "Literature")
+    row[4] = "Lit Crit"           # topics
+    row[7] = "s"                  # summary
+    row[8], row[9] = "high", "false"
+    tsv.write_rows(c.labels_path, contract.LABEL_COLUMNS, [row])
+    tsv.write_rows(c.manifest_path, contract.MANIFEST_COLUMNS, manifest.build(inbox, c))
+
+    update.cmd_materialize(write=True, out=lib, lang="zh")
+
+    # filed into the localized library folder; inbox original removed
+    assert (lib / "文学" / "x.md").exists()
+    assert not (lib / "Literature").exists()
+    assert not (inbox / "AI" / "x.md").exists()
+    _, rows = tsv.read_rows(c.labels_path, contract.LABEL_COLUMNS)
+    assert [r[0] for r in rows] == ["文学/x.md"]
+    # the localized library verifies clean under the same lang
+    assert update.verify_problems(library=lib, lang="zh") == []
