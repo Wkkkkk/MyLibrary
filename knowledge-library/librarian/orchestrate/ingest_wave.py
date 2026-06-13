@@ -66,14 +66,29 @@ def ingest(json_paths, manifest_rows, legacy, reg, cfg, today, run_id=""):
       {"merged", "review", "errors": [...], "skipped": [...], "proposals": [...]}
     """
     frozen = _frozen_index(manifest_rows, legacy)
-    rows, skipped = [], []
+    rows, skipped, parse_errors = [], [], []
     for jp in sorted(str(p) for p in json_paths):
-        for j in json.loads(Path(jp).read_text(encoding="utf-8")):
+        try:
+            data = json.loads(Path(jp).read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            parse_errors.append(f"{jp}: invalid JSON ({e})")
+            continue
+        if not isinstance(data, list):
+            parse_errors.append(
+                f"{jp}: expected a JSON array, got {type(data).__name__}")
+            continue
+        for j in data:
+            if not isinstance(j, dict) or not j.get("relative_path"):
+                parse_errors.append(f"{jp}: item missing 'relative_path'")
+                continue
             rel = unicodedata.normalize("NFC", j["relative_path"])
             if rel not in frozen:
                 skipped.append(rel)
                 continue
             rows.append(_row(j, frozen[rel], cfg, today, run_id))
+    if parse_errors:
+        return {"merged": 0, "review": 0, "errors": parse_errors,
+                "skipped": skipped, "proposals": []}
     expected = [r[PATH_I] for r in rows]
     rows, errors = validate.check(rows, expected, reg, cfg.categories)
     if errors:

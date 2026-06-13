@@ -33,6 +33,7 @@ class Config:
     agents_per_wave: int = 4
     articles_per_agent: int = 15
     extractor_version: str = "knowledge-library"
+    label_model: str = "sonnet"          # model the skill passes to `claude -p`
     # Language (spec §4b): the controlled vocabulary is canonical in
     # label_language; category_localization maps a canonical category name to
     # its display names per language, e.g. {"Literature": {"zh": "文学"}}.
@@ -101,7 +102,8 @@ def load(path):
     for key in ("hub_dir", "generated_marker", "hub_min_articles",
                 "topic_split_threshold", "batch_size", "legacy_labels_name",
                 "label_language", "category_localization",
-                "agents_per_wave", "articles_per_agent", "extractor_version"):
+                "agents_per_wave", "articles_per_agent", "extractor_version",
+                "label_model"):
         if key in raw:
             kwargs[key] = raw[key]
     if "skip_dirs" in raw:

@@ -113,3 +113,31 @@ def test_first_seen_run_defaults_to_empty(cfg, tmp_path):
     ingest_wave.ingest([jp], MANIFEST, {}, _reg(tmp_path), cfg, "2026-06-13")
     fsr = contract.LABEL_COLUMNS.index("first_seen_run")
     assert store.load(cfg.labels_path)[0][fsr] == ""
+
+
+def test_invalid_json_is_reported_not_raised(cfg, tmp_path):
+    cfg = _cfg(cfg)
+    bad = tmp_path / "bad.json"
+    bad.write_text("{ not valid json", encoding="utf-8")
+    summary = ingest_wave.ingest([str(bad)], MANIFEST, {}, _reg(tmp_path), cfg, "2026-06-13")
+    assert summary["merged"] == 0
+    assert any("invalid JSON" in e for e in summary["errors"])
+    assert store.load(cfg.labels_path) == []
+
+
+def test_non_list_payload_is_reported(cfg, tmp_path):
+    cfg = _cfg(cfg)
+    obj = _write_json(tmp_path, _judgment(), name="obj.json")  # a dict, not a list
+    summary = ingest_wave.ingest([obj], MANIFEST, {}, _reg(tmp_path), cfg, "2026-06-13")
+    assert summary["merged"] == 0
+    assert any("expected a JSON array" in e for e in summary["errors"])
+
+
+def test_item_missing_relative_path_is_reported(cfg, tmp_path):
+    cfg = _cfg(cfg)
+    j = _judgment()
+    del j["relative_path"]
+    jp = _write_json(tmp_path, [j])
+    summary = ingest_wave.ingest([jp], MANIFEST, {}, _reg(tmp_path), cfg, "2026-06-13")
+    assert summary["merged"] == 0
+    assert any("relative_path" in e for e in summary["errors"])
