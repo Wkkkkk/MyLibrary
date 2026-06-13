@@ -131,3 +131,45 @@ def test_per_row_violations(tmp_path, cfg):
     assert "folder" in text
     assert "duplicate" in text
     assert "confidence" in text
+
+
+def test_lang_zh_localized_vault_verifies_clean(tmp_path):
+    from librarian import config
+    cfg = config.Config(
+        corpus_path=tmp_path / "vault", library_path=tmp_path / "vault",
+        data_dir=tmp_path / "d", categories={"Literature"},
+        label_language="en", category_localization={"Literature": {"zh": "文学"}},
+        hub_min_articles=1)
+    p = tmp_path / "topics_zh.tsv"
+    tsv.write_rows(p, contract.TOPIC_COLUMNS,
+                   [["T1", "Lit Crit", "", "", "active", "", "", "文学评论"]])
+    reg_zh = registry.load(p)
+    # on disk: localized folder 文学/, localized hub 文学评论.md
+    v = make_vault(tmp_path, ["文学/a.md"])
+    write_hub(v, "文学评论",
+              f"---\n{cfg.generated_marker}\narticles: 1\n---\n\n"
+              f"# 文学评论\n\n## 阅读清单 (1)\n\n- [[a]] — s\n", cfg)
+    # label row: canonical primary Literature + canonical topic Lit Crit
+    lr = ["文学/a.md", "", "", "Literature", "Lit Crit", "", "", "s",
+          "high", "false", "", "", "h" * 16, "v1", "d"]
+    problems = verify.run([lr], reg_zh, v, {"Literature"}, cfg, lang="zh")
+    assert problems == [], problems
+
+
+def test_lang_zh_wrong_localized_folder_flagged(tmp_path):
+    from librarian import config
+    cfg = config.Config(
+        corpus_path=tmp_path / "vault", library_path=tmp_path / "vault",
+        data_dir=tmp_path / "d", categories={"Literature", "History"},
+        label_language="en",
+        category_localization={"Literature": {"zh": "文学"}, "History": {"zh": "历史"}},
+        hub_min_articles=1)
+    p = tmp_path / "topics_zh.tsv"
+    tsv.write_rows(p, contract.TOPIC_COLUMNS,
+                   [["T1", "Lit Crit", "", "", "active", "", "", "文学评论"]])
+    reg_zh = registry.load(p)
+    v = make_vault(tmp_path, ["历史/a.md"])   # filed under 历史 ...
+    lr = ["历史/a.md", "", "", "Literature", "Lit Crit", "", "", "s",   # ... but primary is Literature->文学
+          "high", "false", "", "", "h" * 16, "v1", "d"]
+    problems = verify.run([lr], reg_zh, v, {"Literature", "History"}, cfg, lang="zh")
+    assert any("folder" in p for p in problems)

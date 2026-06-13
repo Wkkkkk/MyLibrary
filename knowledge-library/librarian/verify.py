@@ -1,14 +1,14 @@
 import re
 import unicodedata
 
-from librarian import tsv, contract
+from librarian import tsv, contract, localize
 
 
 def _nfc(s):
     return unicodedata.normalize("NFC", s)
 
 
-def run(label_rows, reg, vault, categories, cfg, manifest_rows=None):
+def run(label_rows, reg, vault, categories, cfg, manifest_rows=None, lang="en"):
     problems = []
     labeled = set()
     active = reg.active_names()
@@ -32,7 +32,7 @@ def run(label_rows, reg, vault, categories, cfg, manifest_rows=None):
             problems.append(f"{rel}: bad confidence {r[8]!r}")
         if r[9] not in contract.BOOL:
             problems.append(f"{rel}: bad needs_review {r[9]!r}")
-        if rel.split("/")[0] != r[3]:
+        if rel.split("/")[0] != _nfc(cfg.localize_category(r[3], lang)):
             problems.append(f"{rel}: folder != primary {r[3]!r}")
     disk = set()
     for d in sorted(p for p in vault.iterdir() if p.is_dir()):
@@ -57,16 +57,18 @@ def run(label_rows, reg, vault, categories, cfg, manifest_rows=None):
     hub_dir = vault / cfg.hub_dir
     if hub_dir.is_dir():
         # expected hubs: active topics with >= hub_min_articles articles
+        def _disp(t):
+            return _nfc(localize.topic_name(cfg, reg, t, lang))
         counts = {}
         topics_by_article = []
         for r in label_rows:
             ts = tsv.split_multi(r[4])
             topics_by_article.append((r, ts))
             for t in ts:
-                counts[_nfc(t)] = counts.get(_nfc(t), 0) + 1
-        active_nfc = {_nfc(n) for n in active}
+                counts[_disp(t)] = counts.get(_disp(t), 0) + 1
+        active_disp = {_disp(n) for n in active}
         expected = {t for t, c in counts.items()
-                    if c >= cfg.hub_min_articles and t in active_nfc}
+                    if c >= cfg.hub_min_articles and t in active_disp}
         for f in sorted(hub_dir.glob("*.md")):
             text = f.read_text(encoding="utf-8")
             if cfg.generated_marker not in text:
@@ -81,7 +83,7 @@ def run(label_rows, reg, vault, categories, cfg, manifest_rows=None):
                      re.findall(r'^- \[\[(.+)\]\](?= —|$)', text, re.M)}
             exp_basenames = set()
             for r, ts in topics_by_article:
-                if stem in {_nfc(t) for t in ts}:
+                if stem in {_disp(t) for t in ts}:
                     base = r[0].rsplit("/", 1)[-1]
                     if base.endswith(".md"):
                         base = base[:-3]
