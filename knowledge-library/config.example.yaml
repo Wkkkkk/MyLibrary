@@ -54,3 +54,8 @@ hub_min_articles: 3                      # min articles before a topic gets a hu
 topic_split_threshold: 40                # topic size that flags a split candidate
 batch_size: 30                           # articles per labeling batch
 generated_marker: "generated: knowledge-library"
+
+# LABELING (defaults shown) ------------------------------------------------
+agents_per_wave: 4                       # parallel labeling agents per wave
+articles_per_agent: 15                   # articles each agent labels
+extractor_version: knowledge-library     # written to each label row's provenance column

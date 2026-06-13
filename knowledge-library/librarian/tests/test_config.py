@@ -70,3 +70,29 @@ def test_localize_category_round_trips(tmp_path):
     # unknown language or unmapped category falls back to the canonical name
     assert c.localize_category("Literature", "fr") == "Literature"
     assert c.localize_category("Unmapped", "zh") == "Unmapped"
+
+
+def test_labeling_knob_defaults(cfg):
+    assert cfg.agents_per_wave == 4
+    assert cfg.articles_per_agent == 15
+    assert cfg.extractor_version == "knowledge-library"
+
+
+def test_wave_directory_properties(cfg):
+    assert cfg.wave_assign_dir == cfg.data_dir / "wave_assign"
+    assert cfg.wave_out_dir == cfg.data_dir / "wave_out"
+
+
+def test_loader_reads_labeling_knobs(tmp_path):
+    from librarian import config
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        "corpus_path: ./v\nlibrary_path: ./l\ndata_dir: ./d\n"
+        "categories: [Literature]\n"
+        "agents_per_wave: 6\narticles_per_agent: 20\n"
+        "extractor_version: pilot-2026\n",
+        encoding="utf-8")
+    c = config.load(p)
+    assert c.agents_per_wave == 6
+    assert c.articles_per_agent == 20
+    assert c.extractor_version == "pilot-2026"
