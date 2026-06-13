@@ -26,6 +26,13 @@ class Config:
     topic_split_threshold: int = 40
     batch_size: int = 30
     legacy_labels_name: str = "legacy_category_labels.tsv"
+    # Labeling knobs (spec §4): the wave loop dispatches `agents_per_wave`
+    # parallel agents, each handling `articles_per_agent` articles. The value
+    # written to a label row's extractor_version column traces which run/version
+    # produced it.
+    agents_per_wave: int = 4
+    articles_per_agent: int = 15
+    extractor_version: str = "knowledge-library"
     # Language (spec §4b): the controlled vocabulary is canonical in
     # label_language; category_localization maps a canonical category name to
     # its display names per language, e.g. {"Literature": {"zh": "文学"}}.
@@ -57,6 +64,14 @@ class Config:
         return self.data_dir / "batches"
 
     @property
+    def wave_assign_dir(self):
+        return self.data_dir / "wave_assign"
+
+    @property
+    def wave_out_dir(self):
+        return self.data_dir / "wave_out"
+
+    @property
     def progress_path(self):
         return self.data_dir / "progress.tsv"
 
@@ -81,7 +96,8 @@ def load(path):
     )
     for key in ("hub_dir", "generated_marker", "hub_min_articles",
                 "topic_split_threshold", "batch_size", "legacy_labels_name",
-                "label_language", "category_localization"):
+                "label_language", "category_localization",
+                "agents_per_wave", "articles_per_agent", "extractor_version"):
         if key in raw:
             kwargs[key] = raw[key]
     if "skip_dirs" in raw:
