@@ -34,7 +34,7 @@ def _frozen_index(manifest_rows, legacy):
     return idx
 
 
-def _row(j, frozen, cfg, today):
+def _row(j, frozen, cfg, today, run_id):
     """One full LABEL_COLUMNS row from an agent judgment object `j` and the
     frozen (title, original_category, content_hash) tuple."""
     title, original_category, content_hash = frozen
@@ -54,11 +54,13 @@ def _row(j, frozen, cfg, today):
         content_hash,
         cfg.extractor_version,
         today,
+        run_id,
     ]
 
 
-def ingest(json_paths, manifest_rows, legacy, reg, cfg, today):
-    """Read agent JSON outputs and merge validated rows into cfg.labels_path.
+def ingest(json_paths, manifest_rows, legacy, reg, cfg, today, run_id=""):
+    """Read agent JSON outputs and merge validated rows into cfg.labels_path,
+    stamping each row's first_seen_run with `run_id` (spec §9 provenance).
     Rows whose path is not in the manifest are skipped (fabricated). On ANY
     validation error nothing is written. Returns a summary dict:
       {"merged", "review", "errors": [...], "skipped": [...], "proposals": [...]}
@@ -71,7 +73,7 @@ def ingest(json_paths, manifest_rows, legacy, reg, cfg, today):
             if rel not in frozen:
                 skipped.append(rel)
                 continue
-            rows.append(_row(j, frozen[rel], cfg, today))
+            rows.append(_row(j, frozen[rel], cfg, today, run_id))
     expected = [r[PATH_I] for r in rows]
     rows, errors = validate.check(rows, expected, reg, cfg.categories)
     if errors:

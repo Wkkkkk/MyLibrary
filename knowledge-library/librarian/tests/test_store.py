@@ -2,7 +2,7 @@ from librarian import store, contract
 
 def row(rel, primary="文学"):
     return [rel, "t", "旧", primary, "文学评论", "", "文学评论", "s",
-            "high", "false", "", "", "h" * 16, "v1", "d"]
+            "high", "false", "", "", "h" * 16, "v1", "d", ""]
 
 def test_merge_appends_and_replaces(tmp_path):
     p = tmp_path / "labels.tsv"
