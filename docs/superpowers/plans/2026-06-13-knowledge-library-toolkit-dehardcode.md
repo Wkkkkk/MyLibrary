@@ -1054,7 +1054,7 @@ The remaining test files monkeypatch `update`'s globals / `schema.VAULT` / `sche
 **Files:**
 - Create: `librarian/tests/test_update_materialize.py`
 - Create: `librarian/tests/test_update_two_vault.py`
-- Create: `librarian/tests/test_update_v2.py`
+- ~~Create: `librarian/tests/test_update_v2.py`~~ — **NOT PORTED (scope correction, 2026-06-13).** The source `tests/test_update_v2.py` is an integration test for `scripts/update_v2_topics.py`, a one-off migration script in mybooks' `scripts/` dir — NOT one of the 16 `mybooks/` package modules this plan ports. It monkeypatches that script's globals (`mod.LABELS/TOPICS/MIGRATION`), not `update`'s, and the script was never in scope for the `librarian/` package. The behaviour it covered (refile on `primary_category` change, two-phase collision-safe rename, migration-log rewrite) is already exercised by the ported `test_update_materialize.py` refile tests against the de-hardcoded `cmd_materialize`. (If the v2-updater script is ever ported in a later plan, port this test alongside it.)
 - Create: `librarian/tests/test_update_legacy.py`
 - Create: `librarian/tests/test_update_smoke.py`
 - Create: `librarian/tests/test_diff_dedup.py`
