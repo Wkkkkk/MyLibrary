@@ -96,3 +96,16 @@ def test_loader_reads_labeling_knobs(tmp_path):
     assert c.agents_per_wave == 6
     assert c.articles_per_agent == 20
     assert c.extractor_version == "pilot-2026"
+
+
+def test_label_model_default(cfg):
+    assert cfg.label_model == "sonnet"
+
+
+def test_loader_reads_label_model(tmp_path):
+    from librarian import config
+    p = tmp_path / "config.yaml"
+    p.write_text(
+        "corpus_path: ./v\nlibrary_path: ./l\ndata_dir: ./d\n"
+        "categories: [Literature]\nlabel_model: opus\n", encoding="utf-8")
+    assert config.load(p).label_model == "opus"

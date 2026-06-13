@@ -59,3 +59,4 @@ generated_marker: "generated: knowledge-library"
 agents_per_wave: 4                       # parallel labeling agents per wave
 articles_per_agent: 15                   # articles each agent labels
 extractor_version: knowledge-library     # written to each label row's provenance column
+label_model: sonnet                      # model the skill passes to `claude -p` for labeling
