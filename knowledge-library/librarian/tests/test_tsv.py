@@ -67,3 +67,10 @@ def test_multi():
 def test_join_multi_rejects_semicolon():
     with pytest.raises(ValueError):
         tsv.join_multi(["a;b"])
+
+def test_write_rows_creates_missing_parent_dir(tmp_path):
+    from librarian import tsv
+    target = tmp_path / "nested" / "deeper" / "out.tsv"   # parents do not exist
+    tsv.write_rows(target, ["a", "b"], [["1", "2"]])
+    _header, rows = tsv.read_rows(target, ["a", "b"])
+    assert rows == [["1", "2"]]

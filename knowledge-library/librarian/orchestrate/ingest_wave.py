@@ -79,7 +79,6 @@ def ingest(json_paths, manifest_rows, legacy, reg, cfg, today, run_id=""):
     if errors:
         return {"merged": 0, "review": 0, "errors": errors,
                 "skipped": skipped, "proposals": []}
-    cfg.labels_path.parent.mkdir(parents=True, exist_ok=True)
     store.merge(cfg.labels_path, rows)
     n_review = sum(1 for r in rows if r[REVIEW_I] == "true")
     validate.log_progress(cfg.progress_path, "wave", len(rows), n_review)

@@ -32,7 +32,7 @@ def _manifest_rows():
 
 def load_legacy(path):
     """Read the v1 labels TSV → {relative_path: (primary_categories, subcategories)}.
-    Returns {} if the file is missing. v1 schema differs from mybooks, so this
+    Returns {} if the file is missing. v1 schema differs from the v2 contract, so this
     reads raw rather than via tsv.read_rows."""
     if not path.exists():
         return {}

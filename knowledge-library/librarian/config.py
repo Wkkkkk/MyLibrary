@@ -1,5 +1,5 @@
 """Loads config.yaml into a Config dataclass, replacing every tunable constant
-that mybooks/schema.py used to hardcode. The fixed data contract lives in
+that the original schema.py used to hardcode. The fixed data contract lives in
 contract.py, not here."""
 import unicodedata
 from dataclasses import dataclass, field

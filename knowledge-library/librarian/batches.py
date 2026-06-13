@@ -17,7 +17,7 @@ def make(manifest_rows, legacy, out_dir, size, vault):
     hit_count = 0
     chunks = [manifest_rows[i:i + size] for i in range(0, len(manifest_rows), size)]
     for n, chunk in enumerate(chunks, start=1):
-        lines = [f"# MyBooks Labeling Batch {n:03d} / {len(chunks)}\n",
+        lines = [f"# knowledge-library Labeling Batch {n:03d} / {len(chunks)}\n",
                  "Use rules/taxonomy_rules.md. Read each article's FULL text at source_path.\n"]
         for j, r in enumerate(chunk, start=1):
             rel, title = r[0], r[1]
