@@ -23,3 +23,10 @@ LABEL_COLUMNS = ["relative_path", "title", "original_category",
 CONFIDENCE = {"high", "medium", "low"}
 BOOL = {"true", "false"}
 TOPIC_STATUS = {"active", "proposed", "merged"}
+
+# Run ledger (spec §9): one append-only row per run. `lang` (the materialize
+# display language) extends the spec schema so a future steady-state never
+# re-runs a localized library under a different display language.
+RUN_COLUMNS = ["run_id", "started_at", "finished_at", "source", "fetched",
+               "new", "labeled", "proposed_topics", "flagged", "status", "lang"]
+RUN_STATUS = {"ok", "nothing_new", "auth_failed", "error"}

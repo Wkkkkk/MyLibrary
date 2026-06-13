@@ -80,6 +80,10 @@ class Config:
         return self.data_dir / "migration_log.tsv"
 
     @property
+    def runs_path(self):
+        return self.data_dir / "runs.tsv"
+
+    @property
     def legacy_labels(self):
         return self.data_dir / self.legacy_labels_name
 
