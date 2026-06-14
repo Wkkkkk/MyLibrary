@@ -6,6 +6,7 @@
   python3 -m librarian.update materialize [--write]
   python3 -m librarian.update verify
   python3 -m librarian.update status
+  python3 -m librarian.update audit
 """
 import sys
 from datetime import date
@@ -159,6 +160,17 @@ def cmd_status():
     print(status.render(cfg))
 
 
+def cmd_audit():
+    """Print the GATE 1 taxonomy audit (split/merge candidates, proposals,
+    review count) — the audit report without an inline python -c."""
+    rep = audit.report(store.load(cfg.labels_path), cfg)
+    print(f"category sizes: {rep['category_sizes']}")
+    print(f"split candidates (> {cfg.topic_split_threshold}): {rep['split_candidates']}")
+    print(f"merge candidates (< {cfg.hub_min_articles}): {rep['merge_candidates']}")
+    print(f"proposals: {rep['proposals']}")
+    print(f"review open: {rep['review_open']}")
+
+
 def _opt(flag):
     """Return the value following `flag` in argv, or None."""
     if flag in sys.argv:
@@ -184,7 +196,8 @@ if __name__ == "__main__":
                 "materialize": lambda: cmd_materialize("--write" in sys.argv, out=lib, lang=lang),
                 "proposals": lambda: cmd_proposals("--accept" in sys.argv),
                 "ingest": lambda: cmd_ingest(sys.argv[2], library=lib),
-                "status": lambda: cmd_status()}
+                "status": lambda: cmd_status(),
+                "audit": lambda: cmd_audit()}
     if cmd not in handlers:
         sys.exit(f"unknown command {cmd!r}; choose from {', '.join(handlers)}")
     handlers[cmd]()
