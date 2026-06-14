@@ -9,13 +9,14 @@ def render(cfg):
     reg = (registry.load(cfg.topics_path)
            if cfg.topics_path.exists() else registry.Registry([]))
     rep = audit.report(rows, cfg)
+    i = contract.RUN_COLUMNS.index
+    runs = ledger.load(cfg.runs_path)          # single read; latest = last row
+    last = runs[-1] if runs else None
     lines = [f"Library: {len(rows)} articles · canon {len(reg.active_names())} topics"]
 
-    last = ledger.latest(cfg.runs_path)
     if last is None:
         lines.append("Last run: never")
     else:
-        i = contract.RUN_COLUMNS.index
         lines.append(
             f"Last run: {last[i('finished_at')]}  "
             f"+{last[i('new')]} new, {last[i('flagged')]} flagged   "
@@ -25,9 +26,7 @@ def render(cfg):
         f"Pending: {len(rep['proposals'])} proposed topics · "
         f"{rep['review_open']} needs-review")
 
-    runs = ledger.load(cfg.runs_path)
     if runs:
-        i = contract.RUN_COLUMNS.index
         auth = [r for r in runs if r[i('status')] == "auth_failed"]
         last_auth = auth[-1][i('finished_at')] if auth else "never"
         lines.append(
