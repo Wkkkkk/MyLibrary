@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  launchd template for the knowledge-library steady-state run (spec §10).
+
+  Setup:
+    1. Edit the absolute paths below (REPLACE /ABS/PATH/TO/knowledge-library and the
+       LIBRARY / KNOWLEDGE_LIBRARY_CONFIG / FETCH_CMD env values).
+    2. Run by hand first:  bash /ABS/PATH/TO/knowledge-library/schedule/wrapper.sh
+    3. Once trusted, install:
+         cp com.user.knowledge-library.plist ~/Library/LaunchAgents/
+         launchctl load ~/Library/LaunchAgents/com.user.knowledge-library.plist
+       Disable:  launchctl unload ~/Library/LaunchAgents/com.user.knowledge-library.plist
+
+  Runs locally where the source cookie lives. Empty pulls cost zero LLM. A run of
+  auth_failed/nothing_new where you expected articles means "re-login" — check
+  `python -m librarian.update status` (references/lessons.md).
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.knowledge-library</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/ABS/PATH/TO/knowledge-library/schedule/wrapper.sh</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>SKILL_ROOT</key>
+        <string>/ABS/PATH/TO/knowledge-library</string>
+        <key>KNOWLEDGE_LIBRARY_CONFIG</key>
+        <string>/ABS/PATH/TO/knowledge-library/config.yaml</string>
+        <key>LIBRARY</key>
+        <string>/ABS/PATH/TO/your/library_vault</string>
+        <key>FETCH_CMD</key>
+        <string></string>
+    </dict>
+
+    <!-- Run once a day at 09:00. Adjust or use StartInterval (seconds) instead. -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key><integer>9</integer>
+        <key>Minute</key><integer>0</integer>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/ABS/PATH/TO/knowledge-library/logs/launchd.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/ABS/PATH/TO/knowledge-library/logs/launchd.err.log</string>
+</dict>
+</plist>

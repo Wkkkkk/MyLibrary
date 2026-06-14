@@ -1,0 +1,65 @@
+# knowledge-library config — copy to config.yaml, fill in, and
+#   export KNOWLEDGE_LIBRARY_CONFIG=/abs/path/to/config.yaml
+# Paths support ~ expansion. This file IS the config contract (librarian/config.py).
+
+# REQUIRED -----------------------------------------------------------------
+corpus_path: ~/inbox                      # the inbox / source vault (adapters write here)
+library_path: ~/library                   # the materialized output vault (built fresh)
+data_dir: ./data                          # TSV state (labels, topics, manifest, runs)
+
+# The primary_category canon — ENGLISH-CANONICAL, exactly one per article.
+# Lock this after the pilot. Replace the starter list with YOUR categories.
+# The labeling agent reads native-language bodies and emits these English names.
+categories:
+  - Technology & Internet
+  - Programming & Software Engineering
+  - AI & Machine Learning
+  - Science & Engineering
+  - Economics & Business
+  - Society, Politics & Public Affairs
+  - Language Learning
+  - Education & Learning
+  - Productivity & Tools
+  - Literature
+  - History & Humanities
+  - Film, Anime & Pop Culture
+  - Psychology, Relationships & Self-growth
+  - Lifestyle
+  - Art & Design
+
+# LANGUAGE (optional) ------------------------------------------------------
+label_language: en                        # canon language for the controlled vocab
+# Display names per language, applied ONLY by `materialize --lang zh`. Categories
+# map here; topics carry their display name in the registry's name_zh column.
+# Article bodies and summaries are never translated. Omit for an English-only vault.
+# Example (Chinese display for the starter categories above):
+category_localization:
+  Technology & Internet: {zh: 技术与互联网}
+  Programming & Software Engineering: {zh: 编程与软件工程}
+  AI & Machine Learning: {zh: AI与机器学习}
+  Science & Engineering: {zh: 科学与工程知识}
+  Economics & Business: {zh: 经济与商业}
+  Society, Politics & Public Affairs: {zh: 社会政治与公共议题}
+  Language Learning: {zh: 语言学习}
+  Education & Learning: {zh: 教育与学习}
+  Productivity & Tools: {zh: 效率与工具}
+  Literature: {zh: 文学}
+  History & Humanities: {zh: 历史人文}
+  Film, Anime & Pop Culture: {zh: 影视动漫与流行文化}
+  Psychology, Relationships & Self-growth: {zh: 心理关系与自我成长}
+  Lifestyle: {zh: 生活方式}
+  Art & Design: {zh: 艺术与设计}
+
+# OPTIONAL (defaults shown) ------------------------------------------------
+hub_dir: _topics                          # topic hub-note folder in the vault
+skip_dirs: [_images, _topics]             # folders manifest/verify ignore
+hub_min_articles: 3                       # min articles before a topic gets a hub
+topic_split_threshold: 40                 # topic size that flags a split candidate (GATE 1)
+batch_size: 30                            # articles per legacy labeling batch
+generated_marker: "generated: knowledge-library"
+
+# LABELING (defaults shown) ------------------------------------------------
+agents_per_wave: 4                        # parallel labeling agents per wave
+articles_per_agent: 15                    # articles each agent labels
+extractor_version: knowledge-library      # written to each label row's provenance column
+label_model: sonnet                       # model the skill passes to `claude -p` for labeling
