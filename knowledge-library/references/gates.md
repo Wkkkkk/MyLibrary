@@ -13,11 +13,7 @@ Bootstrap labeling is autonomous *between* gates and **pauses** at each gate for
 
 **When:** after ~25% of the corpus is labeled (enough signal, cheap to revise).
 **Goal:** revise the canon **once** — split overgrown topics, merge thin ones — before it ossifies.
-**Inputs:** the audit report (there is no dedicated CLI — run it inline):
-```
-python -c "import os; from librarian import config, store, audit; c=config.load(os.environ['KNOWLEDGE_LIBRARY_CONFIG']); r=audit.report(store.load(c.labels_path), c); print({k: r[k] for k in ('split_candidates','merge_candidates','review_open')}); print('proposals:', r['proposals'])"
-```
-It returns `category_sizes`, `topic_sizes`, `split_candidates`, `merge_candidates`, `proposals`, `review_open`. `python -m librarian.update status` also shows the pending proposal + review counts.
+**Inputs:** `python -m librarian.update audit` — prints `category_sizes`, `split_candidates`, `merge_candidates`, `proposals`, and the open review count. `python -m librarian.update status` also shows the pending proposal + review counts.
 **Heuristics:**
 - A topic with **> `topic_split_threshold`** (default 40) articles is a **split candidate** — too coarse to browse.
 - A topic with **< `hub_min_articles`** (default 3) articles is a **merge candidate** — too thin to earn a hub.
