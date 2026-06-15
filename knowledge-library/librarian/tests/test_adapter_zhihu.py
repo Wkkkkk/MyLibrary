@@ -22,6 +22,16 @@ def test_nodes_yield_each_markdown_file(tmp_path):
     assert [name for name, _ in items] == ["0001_a.md", "0002_b.md"]
 
 
+def test_nodes_finds_articles_in_subfolders(tmp_path):
+    # finding #1: an organized/exported corpus nests articles under category
+    # folders; the adapter must discover them recursively, not just top-level.
+    (tmp_path / "问答与思考").mkdir()
+    (tmp_path / "问答与思考" / "0003_c.md").write_text(
+        ARTICLE.replace("204831", "204833"), encoding="utf-8")
+    names = [name for name, _ in zhihu.ZhihuAdapter().nodes(tmp_path)]
+    assert "0003_c.md" in names
+
+
 def test_zhihu_output_passes_the_contract(tmp_path):
     fm, body = base.parse(ARTICLE)
     assert base.validate(fm, body) == []

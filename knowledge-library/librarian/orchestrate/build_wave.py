@@ -40,6 +40,11 @@ def _agent_file(wave_no, agent_no, rows, legacy_nfc, canon, vault, canon_lang):
            "Read each article's FULL text at source_path. Classify into the "
            f"active canon below; propose new topics in {canon_lang} only when "
            "nothing fits. Write the summary in the article's own language.\n",
+           "Output a single STRICT, valid JSON array (the whole file must parse "
+           "with a JSON parser) — one object per article. Any double-quote "
+           'INSIDE a string value (common in CJK summaries) MUST be escaped as '
+           '\\" or written with the language\'s own quotation marks (e.g. “ ” 「 」); '
+           "an unescaped \" breaks the wave.\n",
            f"\nActive topics: {canon or '(none yet — seed the canon)'}\n"]
     for j, r in enumerate(rows, start=1):
         rel, title = r[0], r[1]

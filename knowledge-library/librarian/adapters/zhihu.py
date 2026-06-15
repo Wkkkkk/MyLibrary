@@ -10,5 +10,8 @@ class ZhihuAdapter(base.Adapter):
     name = "zhihu"
 
     def nodes(self, src_dir):
-        for f in sorted(Path(src_dir).glob("*.md")):
+        # rglob, not glob: the fetcher emits a flat directory, but an
+        # organized/exported corpus nests articles under category folders
+        # (finding #1). ingest_to_inbox dedups by url + resolves name collisions.
+        for f in sorted(Path(src_dir).rglob("*.md")):
             yield f.name, f.read_text(encoding="utf-8")
