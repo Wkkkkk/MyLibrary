@@ -199,3 +199,27 @@ def test_materialize_to_library_lang_zh_localizes_folder(tmp_path, monkeypatch):
     assert [r[0] for r in rows] == ["文学/x.md"]
     # the localized library verifies clean under the same lang
     assert update.verify_problems(library=lib, lang="zh") == []
+
+
+def test_materialize_aborts_cleanly_when_source_missing(tmp_path, monkeypatch):
+    # finding #8/#9: after a prior --out/--lang materialize, the shared labels
+    # point at a vault/layout that no longer matches corpus_path. Re-materialize
+    # must fail with a clear error BEFORE any move — never a mid-loop assert that
+    # scatters a partial move and wedges the library.
+    import pytest
+    vault = tmp_path / "vault"
+    data = tmp_path / "data"
+    data.mkdir()
+    vault.mkdir()
+    labels, _, man = _patch(monkeypatch, vault, data)
+    # label points at a file that does not exist on disk
+    tsv.write_rows(labels, contract.LABEL_COLUMNS, [_lrow("文学/ghost.md", "历史人文")])
+    tsv.write_rows(man, contract.MANIFEST_COLUMNS, [])
+
+    with pytest.raises(ValueError, match="missing"):
+        update.cmd_materialize(write=True)
+
+    # nothing was mutated: no partial move folders, label row untouched
+    assert not (vault / "历史人文").exists()
+    _, rows = tsv.read_rows(labels, contract.LABEL_COLUMNS)
+    assert [r[0] for r in rows] == ["文学/ghost.md"]

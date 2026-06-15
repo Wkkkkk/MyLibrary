@@ -89,3 +89,12 @@ def test_lang_en_files_into_canonical_folder(tmp_path):
     refile.apply(moves, tmp_path)
     assert (tmp_path / "Literature" / "a.md").exists()   # verbatim canon
     assert rows[0][0] == "Literature/a.md"
+
+
+def test_unresolved_sources_flags_missing_and_passes_present(tmp_path):
+    cfg = _cfg(tmp_path, ["文学", "历史"])
+    make(tmp_path, "文学/here.md")   # present on disk
+    # gone.md is labeled but absent (corrupted state from a prior --out run)
+    rows = [lrow("文学/here.md", "历史"), lrow("文学/gone.md", "历史")]
+    moves = refile.plan(rows, tmp_path, cfg)
+    assert refile.unresolved_sources(moves, tmp_path) == ["文学/gone.md"]

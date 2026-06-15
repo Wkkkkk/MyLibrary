@@ -49,6 +49,23 @@ def plan(label_rows, vault, cfg, lang="en"):
     return moves
 
 
+def unresolved_sources(moves, vault):
+    """Planned moves whose source file cannot be found in `vault` (NFC-tolerant).
+    A non-empty result means the label paths disagree with the vault contents —
+    applying would stage a partial move and wedge the library — so callers should
+    refuse before mutating anything (findings #8/#9)."""
+    missing = []
+    for old_rel, _, _ in moves:
+        if (vault / old_rel).exists():
+            continue
+        parent = (vault / old_rel).parent
+        base = old_rel.rsplit("/", 1)[-1]
+        if parent.exists() and _resolve_name(base, os.listdir(parent)) is not None:
+            continue
+        missing.append(old_rel)
+    return missing
+
+
 def apply(moves, vault):
     """Execute the planned moves via a two-phase (stage-to-temp, then finalize)
     rename so name-swaps between folders are safe.

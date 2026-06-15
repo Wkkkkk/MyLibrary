@@ -9,7 +9,7 @@ description: Use when turning a growing pile of self-contained, article-sized te
 
 Turn a growing pile of **self-contained, article-sized text units** into a **browsable, topic-linked Obsidian library**. A bundled config-driven Python toolkit (`librarian/`) does the deterministic work — manifest, validation, wave labeling, materialize, verify, run-ledger; this skill orchestrates it and **pauses at three design gates** for your sign-off.
 
-**Core idea:** classify each unit into one locked `primary_category` (English-canonical) + reusable `topics` + free `tags`, then materialize a non-destructive vault of category folders + topic hub-notes. Labels are written by parallel LLM agents reading full text; the toolkit enforces every invariant.
+**Core idea:** classify each unit into one locked `primary_category` (English-canonical) + reusable `topics` + free `tags`, then materialize a vault of category folders + topic hub-notes (refiling the corpus in place, or moving it into a separate library with `--out`). Labels are written by parallel LLM agents reading full text; the toolkit enforces every invariant.
 
 ## When to Use
 
@@ -51,7 +51,7 @@ Run the wave loop; **stop and get sign-off at each 🚦 gate** (the playbook is 
 4. **🚦 GATE 1 — 25% taxonomy audit** — pause; revise the canon ONCE (splits/merges); sign-off. Then finish the waves.
 5. **🚦 GATE 2 — proposals triage** — `python -m librarian.update proposals` lists pending; accept good ones with `--accept`; sign-off.
 6. **🚦 GATE 3 — review queue** — resolve `needs_review` rows to zero; sign-off.
-7. **Materialize (non-destructive)** — `python -m librarian.update materialize --write [--out <library>] [--lang en|zh]`: frontmatter → category folders → topic hubs → verify. Writes a **new** vault; source untouched. `--lang en` (default) renders the English canon verbatim; `--lang zh` localizes folders + hub names + section headers. Then `python -m librarian.update verify` must report **0 ghosts / 0 gaps**.
+7. **Materialize** — `python -m librarian.update materialize --write [--out <library>] [--lang en|zh]`: frontmatter → category folders → topic hubs → verify. **Refiles the corpus into the vault — it moves files, it does not copy.** Default (no `--out`): refiles the inbox **in place**, so `corpus_path` itself becomes the library. With `--out <library>`: **moves** each article into the separate library vault (the inbox original is removed). Never overwrites — a title collision with a different article appends `_N`. **One library per `data_dir`:** the labels TSV + manifest track that single vault, and the display language is fixed at the first materialize — re-running with a different `--out`/`--lang` re-targets that shared state (it does not create a second parallel library, and mismatched re-runs are refused with a clear error). `--lang en` (default) renders the English canon verbatim; `--lang zh` localizes folders + hub names + section headers. Then `python -m librarian.update verify [--out <library>] [--lang …]` (target the same vault + language you materialized) must report **0 ghosts / 0 gaps**.
 
 ## Steady-state (recurring)
 
