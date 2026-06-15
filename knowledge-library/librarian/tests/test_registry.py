@@ -54,3 +54,13 @@ def test_unknown_parent_rejected(tmp_path):
     rows = [["T0001", "甲", "", "不存在", "active", "", "", ""]]
     with pytest.raises(ValueError, match="parent"):
         registry.load(write_topics(tmp_path, rows))
+
+def test_load_or_empty_missing_file_returns_empty_registry(tmp_path):
+    # Bootstrap: the canon doesn't exist until the first proposals are accepted.
+    reg = registry.load_or_empty(tmp_path / "does_not_exist.tsv")
+    assert reg.active_names() == set()
+    assert reg.resolve("anything") is None
+
+def test_load_or_empty_existing_file_loads_normally(tmp_path):
+    reg = registry.load_or_empty(write_topics(tmp_path, GOOD))
+    assert reg.active_names() == {"制度经济学", "经济学"}

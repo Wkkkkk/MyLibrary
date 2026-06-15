@@ -6,9 +6,8 @@ from librarian import store, registry, audit, ledger, contract
 
 def render(cfg):
     rows = store.load(cfg.labels_path)
-    reg = (registry.load(cfg.topics_path)
-           if cfg.topics_path.exists() else registry.Registry([]))
-    rep = audit.report(rows, cfg)
+    reg = registry.load_or_empty(cfg.topics_path)
+    rep = audit.report(rows, cfg, reg=reg)
     i = contract.RUN_COLUMNS.index
     runs = ledger.load(cfg.runs_path)          # single read; latest = last row
     last = runs[-1] if runs else None

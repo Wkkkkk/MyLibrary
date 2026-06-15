@@ -51,6 +51,18 @@ def test_status_with_runs_and_queues(tmp_path):
     assert "last auth_failed: 2026-06-13T10:05" in out
 
 
+def test_status_excludes_accepted_proposals_from_pending(tmp_path):
+    # A topic that has been promoted to active must not still be reported as a
+    # pending proposed topic (finding #5).
+    cfg = _cfg(tmp_path)
+    tsv.write_rows(cfg.topics_path, contract.TOPIC_COLUMNS,
+                   [["T1", "新话题", "", "", "active", "", "2026-06-15", ""]])
+    store.merge(cfg.labels_path,
+                [_lrow("Literature/b.md", topics="新话题", proposed="新话题")])
+    out = status.render(cfg)
+    assert "Pending: 0 proposed topics · 0 needs-review" in out
+
+
 def test_status_no_topics_file(tmp_path):
     cfg = _cfg(tmp_path)  # no topics.tsv written
     out = status.render(cfg)

@@ -88,7 +88,7 @@ def cmd_queue(library=None):
 
 
 def cmd_ingest(out_tsv, library=None):
-    reg = registry.load(cfg.topics_path)
+    reg = registry.load_or_empty(cfg.topics_path)
     _, rows = tsv.read_rows(Path(out_tsv), contract.LABEL_COLUMNS)
     manifest_paths = {r[0] for r in manifest.build(cfg.corpus_path, cfg)}
     ghosts = [r[0] for r in rows if r[0] not in manifest_paths]
@@ -123,7 +123,7 @@ def cmd_materialize(write=False, out=None, lang="en"):
 
 def cmd_proposals(accept=False):
     rows = store.load(cfg.labels_path)
-    reg = registry.load(cfg.topics_path)
+    reg = registry.load_or_empty(cfg.topics_path)
     pend = proposals.pending(rows, reg)
     if not pend:
         print("no pending proposals")
@@ -141,7 +141,7 @@ def verify_problems(library=None, lang="en"):
     the legacy single-vault mode). Returns the list of problems."""
     vault = library if library is not None else cfg.corpus_path
     rows = store.load(cfg.labels_path)
-    reg = registry.load(cfg.topics_path)
+    reg = registry.load_or_empty(cfg.topics_path)
     if cfg.manifest_path.exists():
         return verify.run(rows, reg, vault, cfg.categories, cfg,
                           manifest_rows=_manifest_rows(), lang=lang)
@@ -163,7 +163,8 @@ def cmd_status():
 def cmd_audit():
     """Print the GATE 1 taxonomy audit (split/merge candidates, proposals,
     review count) — the audit report without an inline python -c."""
-    rep = audit.report(store.load(cfg.labels_path), cfg)
+    rep = audit.report(store.load(cfg.labels_path), cfg,
+                       reg=registry.load_or_empty(cfg.topics_path))
     print(f"category sizes: {rep['category_sizes']}")
     print(f"split candidates (> {cfg.topic_split_threshold}): {rep['split_candidates']}")
     print(f"merge candidates (< {cfg.hub_min_articles}): {rep['merge_candidates']}")

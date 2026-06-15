@@ -102,18 +102,27 @@ def ingest(json_paths, manifest_rows, legacy, reg, cfg, today, run_id=""):
             "skipped": skipped, "proposals": pend}
 
 
+def run(cfg, paths=None, today=None, run_id=""):
+    """Wire one wave's ingest from config (the CLI entry point). The canon may
+    not exist yet during bootstrap, so load_or_empty (finding #2)."""
+    from datetime import date
+    from librarian.update import load_legacy   # function-local: avoids import cycle
+    if paths is None:
+        paths = [str(p) for p in sorted(cfg.wave_out_dir.glob("*.json"))]
+    manifest_rows = manifest.build(cfg.corpus_path, cfg)
+    legacy = load_legacy(cfg.legacy_labels)
+    reg = registry.load_or_empty(cfg.topics_path)
+    return ingest(paths, manifest_rows, legacy, reg, cfg,
+                  today or str(date.today()), run_id=run_id)
+
+
 if __name__ == "__main__":
     import os
     import sys
-    from datetime import date
     from librarian import config
-    from librarian.update import load_legacy
     cfg = config.load(os.environ.get("KNOWLEDGE_LIBRARY_CONFIG", "config.yaml"))
-    paths = sys.argv[1:] or [str(p) for p in sorted(cfg.wave_out_dir.glob("*.json"))]
-    manifest_rows = manifest.build(cfg.corpus_path, cfg)
-    legacy = load_legacy(cfg.legacy_labels)
-    reg = registry.load(cfg.topics_path)
-    summary = ingest(paths, manifest_rows, legacy, reg, cfg, str(date.today()))
+    paths = sys.argv[1:] or None
+    summary = run(cfg, paths)
     if summary["errors"]:
         print("\n".join(summary["errors"]))
         sys.exit(1)

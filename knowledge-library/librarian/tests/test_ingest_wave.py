@@ -34,6 +34,26 @@ def _cfg(cfg):
     return cfg
 
 
+def test_run_bootstraps_without_topics_file(cfg):
+    # finding #2: a wave must ingest before any topics.tsv exists — proposed
+    # topics are accepted via that row's proposed_topics, no canon needed yet.
+    inbox = cfg.corpus_path / "zhihu"
+    inbox.mkdir(parents=True)
+    (inbox / "a.md").write_text(
+        '---\ntitle: "A"\nsource: zhihu\nurl: "u1"\n---\nbody\n', encoding="utf-8")
+    cfg.wave_out_dir.mkdir(parents=True, exist_ok=True)
+    (cfg.wave_out_dir / "w.json").write_text(json.dumps([{
+        "relative_path": "zhihu/a.md", "primary_category": "文学",
+        "topics": ["新话题"], "proposed_topics": ["新话题"], "tags": [],
+        "article_type": "x", "summary": "s", "confidence": "high",
+        "needs_review": False, "review_reason": ""}], ensure_ascii=False),
+        encoding="utf-8")
+    assert not cfg.topics_path.exists()
+    summary = ingest_wave.run(cfg, today="2026-06-15")   # must not raise
+    assert summary["errors"] == []
+    assert summary["merged"] == 1
+
+
 def test_ingest_merges_rows_with_frozen_fields(cfg, tmp_path):
     cfg = _cfg(cfg)
     jp = _write_json(tmp_path, [_judgment()])

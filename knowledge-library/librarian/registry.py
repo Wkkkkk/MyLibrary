@@ -53,3 +53,10 @@ class Registry:
 def load(path):
     _, rows = tsv.read_rows(path, contract.TOPIC_COLUMNS)
     return Registry(rows)
+
+
+def load_or_empty(path):
+    """Like load(), but a missing topics.tsv yields an empty Registry. During
+    bootstrap the canon does not exist until the first proposals are accepted,
+    so the wave-builder/ingest/audit paths must tolerate its absence."""
+    return load(path) if path.exists() else Registry([])

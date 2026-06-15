@@ -73,18 +73,24 @@ def build(manifest_rows, labeled_paths, reg, legacy, out_dir, vault, cfg, wave_n
     return files, canon
 
 
+def run(cfg, wave_no):
+    """Wire one wave's assignment build from config (the CLI entry point). The
+    canon may not exist yet on the first wave, so load_or_empty (finding #2)."""
+    from librarian.update import load_legacy   # function-local: avoids import cycle
+    manifest_rows = manifest.build(cfg.corpus_path, cfg)
+    labeled = [r[0] for r in store.load(cfg.labels_path)]
+    reg = registry.load_or_empty(cfg.topics_path)
+    legacy = load_legacy(cfg.legacy_labels)
+    return build(manifest_rows, labeled, reg, legacy,
+                 cfg.wave_assign_dir, cfg.corpus_path, cfg, wave_no)
+
+
 if __name__ == "__main__":
     import os
     import sys
     from librarian import config
-    from librarian.update import load_legacy
     cfg = config.load(os.environ.get("KNOWLEDGE_LIBRARY_CONFIG", "config.yaml"))
     wave_no = int(sys.argv[1]) if len(sys.argv) > 1 else 1
-    manifest_rows = manifest.build(cfg.corpus_path, cfg)
-    labeled = [r[0] for r in store.load(cfg.labels_path)]
-    reg = registry.load(cfg.topics_path)
-    legacy = load_legacy(cfg.legacy_labels)
-    files, canon = build(manifest_rows, labeled, reg, legacy,
-                         cfg.wave_assign_dir, cfg.corpus_path, cfg, wave_no)
+    files, canon = run(cfg, wave_no)
     print(f"wave {wave_no}: wrote {len(files)} agent assignment(s) "
           f"to {cfg.wave_assign_dir}; have agents write JSON to {cfg.wave_out_dir}")

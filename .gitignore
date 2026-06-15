@@ -6,3 +6,6 @@ __pycache__/
 
 # macOS
 .DS_Store
+
+# pilot run workspace
+pilot/
