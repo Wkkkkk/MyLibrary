@@ -9,3 +9,6 @@ __pycache__/
 
 # pilot run workspace
 pilot/
+
+# live adoption workspace (operational state + absolute paths into the real vault)
+adopt/
