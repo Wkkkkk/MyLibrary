@@ -82,6 +82,33 @@ def test_finish_ingests_materializes_verifies_and_logs_ok(tmp_path):
     assert ledger.latest(cfg.runs_path)[i("status")] == "ok"
 
 
+def test_finish_bootstraps_when_no_topics_tsv_yet(tmp_path):
+    # A steady-state run can fire before any topic is accepted, so topics.tsv
+    # does not exist yet. finish() must tolerate the missing canon (bootstrap):
+    # it ingests + materializes + records a ledger row instead of crashing on a
+    # bare registry.load. (verify still strictly flags the as-yet-unaccepted
+    # proposed topic, so the row is a graceful `error`, not an exception.)
+    cfg = _cfg(tmp_path)
+    lib = cfg.library_path
+    lib.mkdir(parents=True, exist_ok=True)
+    assert not cfg.topics_path.exists()
+    _node(cfg.corpus_path, "blog/a.md", "https://x/1")
+    objs = [{"relative_path": "blog/a.md", "primary_category": "Literature",
+             "topics": ["Lit Crit"], "tags": [], "article_type": "essay",
+             "summary": "s", "confidence": "high", "needs_review": False,
+             "review_reason": "", "proposed_topics": ["Lit Crit"]}]
+    jp = cfg.data_dir / "wave.json"
+    jp.write_text(json.dumps(objs), encoding="utf-8")
+
+    row, _ = steady_state.finish(
+        cfg, lib, [str(jp)], run_id="r1", started_at="2026-06-13T10:00",
+        finished_at="2026-06-13T10:05", today="2026-06-13", fetched=1, new=1)
+
+    i = contract.RUN_COLUMNS.index
+    assert (lib / "Literature" / "a.md").exists()      # materialized past the missing canon
+    assert ledger.latest(cfg.runs_path)[i("run_id")] == "r1"   # recorded, not crashed
+
+
 def test_finish_off_canon_logs_error_and_materializes_nothing(tmp_path):
     cfg = _cfg(tmp_path)
     lib = cfg.library_path

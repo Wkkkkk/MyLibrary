@@ -43,7 +43,7 @@ def finish(cfg, library, json_paths, *, run_id, started_at, finished_at, today,
     (rows stamped with run_id), materialize into `library`, verify, and append a
     run row. On an ingest error nothing is materialized and the row is `error`.
     Returns (run_row, digest)."""
-    reg = registry.load(cfg.topics_path)
+    reg = registry.load_or_empty(cfg.topics_path)
     inbox_manifest = manifest.build(cfg.corpus_path, cfg)
     from librarian.update import load_legacy
     legacy = load_legacy(cfg.legacy_labels)
@@ -58,7 +58,7 @@ def finish(cfg, library, json_paths, *, run_id, started_at, finished_at, today,
     man_rows = None
     if cfg.manifest_path.exists():
         _header, man_rows = tsv.read_rows(cfg.manifest_path, contract.MANIFEST_COLUMNS)
-    problems = verify.run(store.load(cfg.labels_path), registry.load(cfg.topics_path),
+    problems = verify.run(store.load(cfg.labels_path), registry.load_or_empty(cfg.topics_path),
                           library, cfg.categories, cfg, manifest_rows=man_rows, lang=lang)
     status = "ok" if not problems else "error"
     row = _row(run_id, started_at, finished_at, source, fetched, new,
