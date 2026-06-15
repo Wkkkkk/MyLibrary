@@ -3,8 +3,8 @@
 # Paths support ~ expansion. This file IS the config contract (librarian/config.py).
 
 # REQUIRED -----------------------------------------------------------------
-corpus_path: ~/inbox                      # the inbox / source vault (adapters write here)
-library_path: ~/library                   # the materialized output vault (built fresh)
+corpus_path: ~/inbox                      # the inbox / source vault (adapters write here; refiled IN PLACE on a default materialize)
+library_path: ~/library                   # output vault for `materialize --out` (articles MOVED here; pass --out explicitly)
 data_dir: ./data                          # TSV state (labels, topics, manifest, runs)
 
 # The primary_category canon — ENGLISH-CANONICAL, exactly one per article.

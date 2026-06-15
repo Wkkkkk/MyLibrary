@@ -52,6 +52,18 @@ def test_build_writes_one_file_per_agent(cfg, tmp_path):
     assert "v1_reference\tnone" in files[1].read_text(encoding="utf-8")
 
 
+def test_assignment_demands_strict_json(cfg, tmp_path):
+    # finding #4: CJK summaries with unescaped " produced invalid JSON that
+    # blocked the whole wave; the assignment must spell out strict-JSON output.
+    cfg.agents_per_wave = 1
+    cfg.articles_per_agent = 2
+    files, _ = build_wave.build(MANIFEST, [], _reg(tmp_path), {},
+                                cfg.wave_assign_dir, cfg.corpus_path, cfg, 1)
+    text = files[0].read_text(encoding="utf-8")
+    assert "valid JSON" in text
+    assert '\\"' in text          # explicit quote-escaping guidance
+
+
 def test_run_bootstraps_without_topics_file(cfg):
     # finding #2: the first wave must build before any topics.tsv exists.
     inbox = cfg.corpus_path / "zhihu"

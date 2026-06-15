@@ -20,6 +20,14 @@ def materialize(cfg, write=False, out=None, lang="en"):
     if not write:
         print("dry run; pass --write")
         return
+    missing = refile.unresolved_sources(moves, cfg.corpus_path)
+    if missing:
+        raise ValueError(
+            f"materialize aborted: {len(missing)} labeled file(s) are missing "
+            f"from {cfg.corpus_path} (e.g. {missing[0]}). The labels point at a "
+            f"vault/layout that no longer matches the inbox — likely a prior "
+            f"`materialize --out`/`--lang` run (one library per data_dir). "
+            f"Re-ingest the corpus, or point --out at the existing library.")
     move_log = refile.apply(moves, cfg.corpus_path)
     if move_log:
         log_path = cfg.migration_log_path
