@@ -35,3 +35,18 @@ def test_materialize_refiles_in_place(tmp_path):
 
     assert [r[0] for r in store.load(cfg.labels_path)] == ["历史人文/a.md"]
     assert (cfg.corpus_path / "历史人文" / "a.md").exists()
+
+
+def test_materialize_tolerates_missing_topics_tsv(tmp_path):
+    # Bootstrap: a fresh library has no topics.tsv until proposals are accepted
+    # (GATE 2). materialize must treat the absent canon as empty and still
+    # refile by primary_category (writing no hubs) — not crash on registry.load.
+    cfg = _cfg(tmp_path)
+    _article(cfg.corpus_path, "文学/a.md", "历史人文")
+    assert not cfg.topics_path.exists()
+    tsv.write_rows(cfg.labels_path, contract.LABEL_COLUMNS, [_lrow("文学/a.md", "历史人文")])
+    tsv.write_rows(cfg.manifest_path, contract.MANIFEST_COLUMNS, manifest.build(cfg.corpus_path, cfg))
+
+    materialize.materialize(cfg, write=True)
+
+    assert (cfg.corpus_path / "历史人文" / "a.md").exists()

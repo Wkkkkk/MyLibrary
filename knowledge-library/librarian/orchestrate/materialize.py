@@ -11,7 +11,7 @@ from librarian import (contract, tsv, manifest, registry, store, hubgen,
 
 def materialize(cfg, write=False, out=None, lang="en"):
     rows = store.load(cfg.labels_path)
-    reg = registry.load(cfg.topics_path)
+    reg = registry.load_or_empty(cfg.topics_path)
     if out is not None and out != cfg.corpus_path:
         return _to_library(cfg, rows, reg, out, write, lang)
     moves = refile.plan(rows, cfg.corpus_path, cfg, lang)
