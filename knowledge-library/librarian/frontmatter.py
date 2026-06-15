@@ -1,7 +1,12 @@
 import re
 from librarian import tsv
 
-MANAGED = ("tags", "primary_category", "topics", "summary", "label_confidence")
+# `category` is managed (stripped): the source `category:` is a now-redundant
+# duplicate of the canonical primary_category (its value is preserved as
+# original_category in the label TSV), so it must not linger in materialized
+# frontmatter (finding #3).
+MANAGED = ("tags", "primary_category", "topics", "summary", "label_confidence",
+           "category")
 
 # Closing frontmatter fence: a line that is exactly '---' (optional trailing
 # whitespace). Must NOT match dashes inside a multi-line quoted title such as

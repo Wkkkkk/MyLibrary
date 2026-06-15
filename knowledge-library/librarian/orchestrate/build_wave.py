@@ -4,7 +4,7 @@ embedding the active topic canon. The parallel dispatch + JSON write is done by
 the orchestrating skill (dispatching-parallel-agents); this module only prepares
 the assignments — ingest_wave later collects the results."""
 import unicodedata
-from librarian import manifest, registry, store
+from librarian import contract, manifest, registry, store
 
 # Human-readable names for the canon language code, for the labeling prompt.
 LANGUAGE_NAMES = {"en": "English", "zh": "Chinese"}
@@ -46,14 +46,16 @@ def _agent_file(wave_no, agent_no, rows, legacy_nfc, canon, vault, canon_lang):
            '\\" or written with the language\'s own quotation marks (e.g. “ ” 「 」); '
            "an unescaped \" breaks the wave.\n",
            f"\nActive topics: {canon or '(none yet — seed the canon)'}\n"]
+    cat_i = contract.MANIFEST_COLUMNS.index("original_category")
     for j, r in enumerate(rows, start=1):
         rel, title = r[0], r[1]
         v1 = legacy_nfc.get(unicodedata.normalize("NFC", rel))
         ref = f"{v1[0]} | {v1[1]}" if v1 else "none"
+        manifest_cat = r[cat_i] if len(r) > cat_i else ""
         out += [f"\n## Article {j}\n",
                 f"relative_path\t{rel}\n",
                 f"title\t{title}\n",
-                f"original_category\t{v1[0] if v1 else ''}\n",
+                f"original_category\t{v1[0] if v1 else manifest_cat}\n",
                 f"content_hash\t{r[3]}\n",
                 f"source_path\t{vault}/{rel}\n",
                 f"v1_reference\t{ref}\n"]

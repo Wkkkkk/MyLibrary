@@ -24,7 +24,7 @@ Reading Chinese → emitting an English canon is reliable for a capable model, b
 
 ## Agents don't set frozen fields
 
-`ingest_wave` reconstructs `title` + `content_hash` from the manifest and `original_category` from the legacy labels — agents supply only the judgment fields. An agent can't fabricate provenance even if it emits a wrong `title`. Malformed/non-list agent JSON is surfaced as a structured error (the whole wave blocks), never a crash.
+`ingest_wave` reconstructs `title` + `content_hash` from the manifest and `original_category` from the legacy labels, falling back to the source `category:` frontmatter (also carried in the manifest) when there is no legacy row — agents supply only the judgment fields. An agent can't fabricate provenance even if it emits a wrong `title`. Malformed/non-list agent JSON is surfaced as a structured error (the whole wave blocks), never a crash. On materialize the now-redundant source `category:` is stripped from the article's frontmatter (the canonical category is `primary_category`).
 
 ## Cookie-expiry caveat (steady-state)
 

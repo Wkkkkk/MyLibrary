@@ -24,13 +24,17 @@ def _multi(v):
 
 def _frozen_index(manifest_rows, legacy):
     """{NFC relative_path: (title, original_category, content_hash)}; the title
-    and hash are frozen from the manifest, original_category from legacy v1."""
+    and hash are frozen from the manifest. original_category prefers the legacy
+    v1 mapping, falling back to the manifest's source `category:` column
+    (finding #3) so a fresh ingest is not left blank."""
     legacy_nfc = {unicodedata.normalize("NFC", k): v for k, v in legacy.items()}
+    cat_i = contract.MANIFEST_COLUMNS.index("original_category")
     idx = {}
     for r in manifest_rows:
         rel = unicodedata.normalize("NFC", r[0])
         v1 = legacy_nfc.get(rel)
-        idx[rel] = (r[1], v1[0] if v1 else "", r[3])
+        manifest_cat = r[cat_i] if len(r) > cat_i else ""
+        idx[rel] = (r[1], v1[0] if v1 else manifest_cat, r[3])
     return idx
 
 

@@ -3,8 +3,8 @@ import json
 from librarian import contract, tsv, registry, store
 from librarian.orchestrate import ingest_wave
 
-MANIFEST = [["zhihu/a0.md", "Title Zero", "zhihu", "0" * 16],
-            ["zhihu/a1.md", "Title One", "zhihu", "1" * 16]]
+MANIFEST = [["zhihu/a0.md", "Title Zero", "zhihu", "0" * 16, "源类零"],
+            ["zhihu/a1.md", "Title One", "zhihu", "1" * 16, "源类一"]]
 REG_ROWS = [["T0001", "深度学习", "", "", "active", "", "", ""]]
 
 
@@ -77,7 +77,17 @@ def test_original_category_comes_from_legacy(cfg, tmp_path):
     jp = _write_json(tmp_path, [_judgment()])
     legacy = {"zhihu/a0.md": ("旧类", "旧子类")}
     ingest_wave.ingest([jp], MANIFEST, legacy, _reg(tmp_path), cfg, "2026-06-13")
-    assert store.load(cfg.labels_path)[0][2] == "旧类"
+    assert store.load(cfg.labels_path)[0][2] == "旧类"   # legacy v1 wins
+
+
+def test_original_category_falls_back_to_manifest_when_no_legacy(cfg, tmp_path):
+    # finding #3: with no legacy v1 mapping, original_category is seeded from the
+    # manifest's source `category:` column instead of being left blank.
+    cfg = _cfg(cfg)
+    jp = _write_json(tmp_path, [_judgment()])
+    ingest_wave.ingest([jp], MANIFEST, legacy={}, reg=_reg(tmp_path),
+                       cfg=cfg, today="2026-06-13")
+    assert store.load(cfg.labels_path)[0][2] == "源类零"
 
 
 def test_needs_review_bool_becomes_lowercase_string(cfg, tmp_path):

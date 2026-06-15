@@ -1,7 +1,8 @@
 from librarian import contract, tsv, registry
 from librarian.orchestrate import build_wave
 
-MANIFEST = [[f"zhihu/a{i}.md", f"title{i}", "zhihu", f"{i:016x}"] for i in range(6)]
+MANIFEST = [[f"zhihu/a{i}.md", f"title{i}", "zhihu", f"{i:016x}", f"源类{i}"]
+            for i in range(6)]
 REG_ROWS = [["T0001", "文学评论", "", "", "active", "", "", ""],
             ["T0002", "思想史", "", "", "proposed", "", "", ""]]
 
@@ -50,6 +51,18 @@ def test_build_writes_one_file_per_agent(cfg, tmp_path):
     assert "v1_reference\tAI与机器学习 | 深度学习" in text
     # a1 has no legacy row
     assert "v1_reference\tnone" in files[1].read_text(encoding="utf-8")
+
+
+def test_assignment_seeds_original_category_from_manifest(cfg, tmp_path):
+    # finding #3: with no legacy v1 row, the assignment still shows the source
+    # `category:` (carried in the manifest) as original_category, not a blank.
+    cfg.agents_per_wave = 1
+    cfg.articles_per_agent = 1
+    files, _ = build_wave.build(MANIFEST, [], _reg(tmp_path), legacy={},
+                                out_dir=cfg.wave_assign_dir, vault=cfg.corpus_path,
+                                cfg=cfg, wave_no=1)
+    text = files[0].read_text(encoding="utf-8")
+    assert "original_category\t源类0" in text
 
 
 def test_assignment_demands_strict_json(cfg, tmp_path):

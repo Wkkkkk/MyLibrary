@@ -2,7 +2,13 @@
 environmental values in config.py, these define the normalized-node / label
 record shape and are not user-tunable."""
 
-MANIFEST_COLUMNS = ["relative_path", "title", "folder", "content_hash"]
+# original_category is APPENDED last: it carries the article's source
+# `category:` frontmatter (its legacy/origin category, distinct from the folder
+# and the eventual primary_category) so a fresh ingest can seed the label's
+# original_category column (finding #3). Appended so manifest's positional reads
+# (r[0]=relative_path .. r[3]=content_hash) elsewhere stay unchanged.
+MANIFEST_COLUMNS = ["relative_path", "title", "folder", "content_hash",
+                    "original_category"]
 
 # name_zh is appended LAST: registry.py and proposals.py read topic rows
 # positionally (r[1]=name … r[6]=created_at), so appending leaves them intact.
