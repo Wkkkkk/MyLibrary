@@ -33,6 +33,22 @@ def test_build_nfc_normalizes_paths(tmp_path, cfg):
     assert nfc in paths
     assert nfd not in paths or nfc == nfd
 
+def test_build_extracts_source_category_frontmatter(tmp_path, cfg):
+    # The source `category:` frontmatter is the article's original (e.g. legacy
+    # mybooks) category — distinct from both the containing folder and the
+    # eventual primary_category. Captured as the manifest's last column so it can
+    # seed original_category on a fresh ingest (finding #3).
+    (tmp_path / "文学").mkdir()
+    (tmp_path / "文学" / "a.md").write_text(
+        '---\ntitle: A\ncategory: "职场与成长"\n---\nbody', encoding="utf-8")
+    (tmp_path / "文学" / "b.md").write_text(
+        "---\ntitle: B\n---\nbody", encoding="utf-8")     # no category frontmatter
+    rows = {r[0]: r for r in manifest.build(tmp_path, cfg)}
+    oc = manifest.contract.MANIFEST_COLUMNS.index("original_category")
+    assert rows["文学/a.md"][oc] == "职场与成长"
+    assert rows["文学/b.md"][oc] == ""
+
+
 def test_diff(tmp_path, cfg):
     vault = make_vault(tmp_path)
     old = manifest.build(vault, cfg)

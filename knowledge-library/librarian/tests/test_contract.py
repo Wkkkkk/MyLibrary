@@ -13,8 +13,11 @@ def test_label_columns_complete_and_ordered():
 
 
 def test_manifest_and_topic_columns():
+    # original_category is APPENDED last (finding #3) so manifest positional reads
+    # r[0]..r[3] in build_wave/ingest_wave/verify stay unchanged.
     assert contract.MANIFEST_COLUMNS == [
-        "relative_path", "title", "folder", "content_hash"]
+        "relative_path", "title", "folder", "content_hash", "original_category"]
+    assert contract.MANIFEST_COLUMNS[-1] == "original_category"
     # name_zh is APPENDED last so registry/proposals positional reads (r[1]..r[6])
     # are unchanged; it holds the Chinese display name for the canonical English name.
     assert contract.TOPIC_COLUMNS == [

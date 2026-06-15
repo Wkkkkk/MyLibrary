@@ -22,7 +22,11 @@ def test_apply_and_idempotent(tmp_path):
     assert 'primary_category: "文学"' in text
     assert 'topics: "文学评论; 思想史"' in text
     assert '  - Cpp' in text and '  - tip-of-week' in text
-    assert 'category: "旧类"' in text          # untouched
+    # finding #3: the stale source `category:` is stripped (it is a now-redundant
+    # duplicate of the canonical primary_category; its value is preserved as
+    # original_category in the label TSV). primary_category must survive.
+    assert "\ncategory:" not in text           # stale source category removed
+    assert 'primary_category: "文学"' in text
     assert "zhihu" not in text                 # import tags replaced
     assert frontmatter.apply(p, row()) == "unchanged"
 

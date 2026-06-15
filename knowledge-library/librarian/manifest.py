@@ -9,6 +9,14 @@ def _title(text, fallback):
     return m.group(1) if m else fallback
 
 
+def _category(text):
+    """The article's source `category:` frontmatter (its origin/legacy category,
+    e.g. from mybooks), or "" when absent. Distinct from the containing folder
+    and the canonical primary_category."""
+    m = re.search(r"(?m)^category:\s*\"?(.+?)\"?\s*$", text[:2000])
+    return m.group(1) if m else ""
+
+
 def read_url(path):
     """The article's stable zhihu `url` from frontmatter, or None. Used as the
     cross-vault identity (survives re-fetch + frontmatter rewrite, unlike a
@@ -34,7 +42,8 @@ def build(vault, cfg):
             h = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
             rel = unicodedata.normalize("NFC", f"{d.name}/{f.name}")
             title = unicodedata.normalize("NFC", _title(text, f.stem))
-            rows.append([rel, title, d.name, h])
+            category = unicodedata.normalize("NFC", _category(text))
+            rows.append([rel, title, d.name, h, category])
     return rows
 
 
