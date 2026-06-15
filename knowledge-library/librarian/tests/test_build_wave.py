@@ -52,6 +52,19 @@ def test_build_writes_one_file_per_agent(cfg, tmp_path):
     assert "v1_reference\tnone" in files[1].read_text(encoding="utf-8")
 
 
+def test_run_bootstraps_without_topics_file(cfg):
+    # finding #2: the first wave must build before any topics.tsv exists.
+    inbox = cfg.corpus_path / "zhihu"
+    inbox.mkdir(parents=True)
+    (inbox / "a.md").write_text(
+        '---\ntitle: "A"\nsource: zhihu\nurl: "u1"\n---\nbody\n', encoding="utf-8")
+    cfg.agents_per_wave = 1
+    cfg.articles_per_agent = 5
+    assert not cfg.topics_path.exists()
+    files, canon = build_wave.run(cfg, wave_no=1)   # must not raise
+    assert len(files) == 1 and files[0].exists()
+
+
 def test_build_caps_total_at_wave_size(cfg, tmp_path):
     cfg.agents_per_wave = 2
     cfg.articles_per_agent = 2          # wave size 4
