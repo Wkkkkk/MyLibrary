@@ -9,7 +9,7 @@ from librarian.search.index_store import IndexStore
 _REL, _TITLE, _PRIMARY, _TOPICS, _SUMMARY, _HASH = 0, 1, 3, 4, 7, 12
 
 
-def build_inputs(cfg):
+def build_inputs(cfg, max_chars=None):
     records, skipped = [], []
     for r in store.load(cfg.labels_path):
         rel = r[_REL]
@@ -24,6 +24,10 @@ def build_inputs(cfg):
             skipped.append(rel)
             continue
         text = "\n\n".join(p for p in (r[_TITLE], r[_SUMMARY], body) if p)
+        if max_chars:
+            # Truncate over-long text so Ollama's /api/embed does not reject it
+            # (HTTP 400 over context); title + summary lead, so they survive.
+            text = text[:max_chars]
         records.append({
             "url": url, "relative_path": rel, "title": r[_TITLE],
             "summary": r[_SUMMARY], "primary_category": r[_PRIMARY],
@@ -40,7 +44,7 @@ def update_index(cfg, settings, embedder, *, rebuild=False, store_factory=None):
         if rebuild:
             idx.delete(list(idx.hashes()))
 
-        records, skipped = build_inputs(cfg)
+        records, skipped = build_inputs(cfg, settings.max_embed_chars)
         existing = idx.hashes()
         want = {rec["url"] for rec in records}
         to_embed = [rec for rec in records

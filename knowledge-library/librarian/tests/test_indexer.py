@@ -49,6 +49,19 @@ def test_build_inputs_skips_missing_url(tmp_path):
     assert "body text" in records[0]["_text"] and "sum" in records[0]["_text"]
 
 
+def test_build_inputs_truncates_over_long_text(tmp_path):
+    # An over-long body must be capped so Ollama's /api/embed does not reject it
+    # (HTTP 400 over context). Title + summary lead the text, so they survive.
+    cfg = _cfg(tmp_path)
+    _write_article(cfg, "文学/big.md", "u-big", body="x" * 50000)
+    store.merge(cfg.labels_path, [_label("文学/big.md", "h1")])
+    capped, _ = indexer.build_inputs(cfg, max_chars=1000)
+    assert len(capped[0]["_text"]) == 1000
+    # No cap → full text retained.
+    full, _ = indexer.build_inputs(cfg)
+    assert len(full[0]["_text"]) > 50000
+
+
 def test_first_index_embeds_all_then_incremental(tmp_path):
     cfg = _cfg(tmp_path); s = from_config(cfg)
     _write_article(cfg, "文学/a.md", "u-a")
