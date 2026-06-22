@@ -1,4 +1,3 @@
-import numpy as np
 from librarian import config, store, contract
 from librarian.search import indexer
 from librarian.search.settings import from_config

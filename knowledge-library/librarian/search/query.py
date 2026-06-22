@@ -35,6 +35,11 @@ def search(cfg, settings, embedder, query, *, limit=None, category=None,
     if not metas:
         return []
     qvec = np.asarray(embedder.embed([query], is_query=True)[0], dtype=np.float32)
+    if matrix.shape[1] != qvec.shape[0]:
+        raise RuntimeError(
+            f"index vector dim {matrix.shape[1]} != query dim {qvec.shape[0]} — "
+            f"the index was built with a different embedding model. "
+            f"Rebuild it: `python -m librarian.update index --rebuild`")
     scores = matrix @ qvec
     results = []
     for i in np.argsort(-scores):

@@ -61,6 +61,22 @@ def test_limit_caps_results(tmp_path):
     assert len(query.search(cfg, from_config(cfg), FakeEmbedder(), "x", limit=2)) == 2
 
 
+def test_dim_mismatch_raises_clear_error(tmp_path):
+    import numpy as np
+    import pytest
+    cfg = _cfg(tmp_path)
+    store.merge(cfg.labels_path, [_article(cfg, "文学/a.md", "u-a", "x", "文学", "诗", "h")])
+    _build(cfg)  # index built with FakeEmbedder (dim 16)
+
+    class WrongDim:
+        dim = 4
+        def embed(self, texts, *, is_query=False):
+            return np.ones((len(texts), 4), dtype=np.float32)
+
+    with pytest.raises(RuntimeError, match="different embedding model"):
+        query.search(cfg, from_config(cfg), WrongDim(), "x")
+
+
 def test_category_and_topic_filters(tmp_path):
     cfg = _cfg(tmp_path)
     store.merge(cfg.labels_path, [
