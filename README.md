@@ -24,6 +24,9 @@ files new items on a schedule.
   gates → first materialize.
 - **Steady-state** (recurring, unattended): new items that don't fit the canon are labeled
   best-fit, flagged for review, and filed without halting the run.
+- **Semantic search** (optional): natural-language retrieval over the materialized library via a
+  local Qwen3-Embedding model (Ollama); index with `python -m librarian.update index`, query with
+  `python -m librarian.update search`, or expose as an MCP tool for Claude.
 
 ## Status
 
