@@ -17,6 +17,11 @@ DEFAULTS = {
     "auto_pull": True,
     "index_path": "search_index.db",
     "default_limit": 10,
+    # Cap on embed-text length. Ollama's /api/embed rejects (HTTP 400) inputs
+    # over the model's context, so over-long article bodies are truncated to
+    # this many characters before embedding (spec §5). title + summary lead the
+    # text, so they always survive; only a long body's tail is trimmed.
+    "max_embed_chars": 12000,
 }
 
 
@@ -29,6 +34,7 @@ class SearchSettings:
     auto_pull: bool
     index_path: Path
     default_limit: int
+    max_embed_chars: int
 
 
 def from_config(cfg):
@@ -45,4 +51,5 @@ def from_config(cfg):
         auto_pull=bool(raw["auto_pull"]),
         index_path=index_path,
         default_limit=int(raw["default_limit"]),
+        max_embed_chars=int(raw["max_embed_chars"]),
     )
