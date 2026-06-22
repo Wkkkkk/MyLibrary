@@ -8,6 +8,24 @@ from librarian import (contract, tsv, manifest, registry, store, ledger, verify)
 from librarian.orchestrate import ingest_wave, materialize
 
 
+def _index_after_materialize(cfg):
+    """Refresh the search index with this run's new/changed items (spec §5).
+    Best-effort: a missing/unreachable embedder must NOT fail a steady-state run
+    that already materialized — the index just stays stale until the next run or
+    a manual `index`."""
+    try:
+        from librarian.search import settings as ssettings
+        from librarian.search import embedder as semb
+        from librarian.search import indexer
+        s = ssettings.from_config(cfg)
+        emb = semb.OllamaEmbedder(s)
+        semb.ensure_model(s)
+        indexer.update_index(cfg, s, emb)
+    except Exception as e:  # noqa: BLE001 — non-fatal by design (spec §7)
+        print(f"warning: search index not refreshed ({e}); run "
+              f"`python -m librarian.update index` later")
+
+
 def diff_new(cfg, library):
     """Inbox articles whose stable url is not yet in `library` (net-new). Keyed
     by url so a re-fetch (same url, new bytes) is not treated as new — mirrors
@@ -55,6 +73,7 @@ def finish(cfg, library, json_paths, *, run_id, started_at, finished_at, today,
         ledger.append(cfg.runs_path, row)
         return row, ledger.digest(row)
     materialize.materialize(cfg, write=True, out=library, lang=lang)
+    _index_after_materialize(cfg)
     man_rows = None
     if cfg.manifest_path.exists():
         _header, man_rows = tsv.read_rows(cfg.manifest_path, contract.MANIFEST_COLUMNS)

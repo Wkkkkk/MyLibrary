@@ -7,6 +7,8 @@
   python3 -m librarian.update verify
   python3 -m librarian.update status
   python3 -m librarian.update audit
+  python3 -m librarian.update index [--rebuild]
+  python3 -m librarian.update search "<query>" [--limit N] [--category C] [--topic T]
 """
 import sys
 from datetime import date
@@ -172,6 +174,55 @@ def cmd_audit():
     print(f"review open: {rep['review_open']}")
 
 
+def cmd_index(rebuild=False):
+    """Build/refresh the semantic-search vector index (spec §5)."""
+    from librarian.search import settings as ssettings, embedder as semb, indexer
+    s = ssettings.from_config(cfg)
+    emb = semb.OllamaEmbedder(s)
+    semb.ensure_model(s)
+    summary = indexer.update_index(cfg, s, emb, rebuild=rebuild)
+    print(f"indexed: embedded {summary['embedded']}, deleted {summary['deleted']}, "
+          f"total {summary['total']}, skipped {len(summary['skipped'])}")
+    if summary["skipped"]:
+        head = summary["skipped"][:5]
+        more = " …" if len(summary["skipped"]) > 5 else ""
+        print(f"  skipped (no url / unreadable): {head}{more}")
+
+
+def _stale_count(cfg, settings):
+    """Approximate count of labeled items not yet in the index: label rows minus
+    indexed rows (spec §7). Heuristic — over-counts by any no-url/unreadable rows
+    the indexer skips, which are rare. Cheap (no body reads)."""
+    from librarian.search.index_store import IndexStore
+    idx = IndexStore.open(settings.index_path)
+    try:
+        return max(0, len(store.load(cfg.labels_path)) - idx.count())
+    finally:
+        idx.close()
+
+
+def cmd_search(query, limit=None, category=None, topic=None):
+    """Semantic search over the library; prints ranked notes (spec §5)."""
+    from librarian.search import settings as ssettings, embedder as semb, query as q
+    s = ssettings.from_config(cfg)
+    emb = semb.OllamaEmbedder(s)
+    results = q.search(cfg, s, emb, query, limit=limit, category=category,
+                       topic=topic)
+    if not results:
+        print("no results — is the index built? run "
+              "`python -m librarian.update index`")
+        return
+    for r in results:
+        print(f"[{r.score:.3f}] {r.title}  ·  {r.primary_category}")
+        print(f"        {r.relative_path}")
+        if r.summary:
+            print(f"        {r.summary[:140]}")
+    pending = _stale_count(cfg, s)
+    if pending:
+        print(f"note: ~{pending} labeled item(s) not yet indexed — run "
+              f"`python -m librarian.update index` to refresh")
+
+
 def _opt(flag):
     """Return the value following `flag` in argv, or None."""
     if flag in sys.argv:
@@ -188,9 +239,13 @@ if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "diff"
     if cmd == "ingest" and len(sys.argv) < 3:
         sys.exit("usage: python -m librarian.update ingest <out.tsv> [--out <library>]")
+    if cmd == "search" and len(sys.argv) < 3:
+        sys.exit('usage: python -m librarian.update search "<query>" '
+                 '[--limit N] [--category C] [--topic T]')
     out = _opt("--out")
     lib = Path(out).expanduser() if out else None
     lang = _opt("--lang") or "en"
+    limit = _opt("--limit")
     handlers = {"diff": lambda: cmd_diff(library=lib),
                 "queue": lambda: cmd_queue(library=lib),
                 "verify": lambda: cmd_verify(library=lib, lang=lang),
@@ -198,7 +253,11 @@ if __name__ == "__main__":
                 "proposals": lambda: cmd_proposals("--accept" in sys.argv),
                 "ingest": lambda: cmd_ingest(sys.argv[2], library=lib),
                 "status": lambda: cmd_status(),
-                "audit": lambda: cmd_audit()}
+                "audit": lambda: cmd_audit(),
+                "index": lambda: cmd_index("--rebuild" in sys.argv),
+                "search": lambda: cmd_search(
+                    sys.argv[2], limit=int(limit) if limit else None,
+                    category=_opt("--category"), topic=_opt("--topic"))}
     if cmd not in handlers:
         sys.exit(f"unknown command {cmd!r}; choose from {', '.join(handlers)}")
     handlers[cmd]()

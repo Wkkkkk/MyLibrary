@@ -39,6 +39,7 @@ class Config:
     # its display names per language, e.g. {"Literature": {"zh": "文学"}}.
     label_language: str = "en"
     category_localization: dict = field(default_factory=dict)
+    search: dict = field(default_factory=dict)
 
     def localize_category(self, canonical, lang):
         """The display name for a canonical category in `lang`. Returns the
@@ -103,7 +104,7 @@ def load(path):
                 "topic_split_threshold", "batch_size", "legacy_labels_name",
                 "label_language", "category_localization",
                 "agents_per_wave", "articles_per_agent", "extractor_version",
-                "label_model"):
+                "label_model", "search"):
         if key in raw:
             kwargs[key] = raw[key]
     if "skip_dirs" in raw:

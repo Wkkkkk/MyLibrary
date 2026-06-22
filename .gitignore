@@ -4,6 +4,10 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 
+# semantic-search vector index artifacts
+*.db
+search_index.db
+
 # macOS
 .DS_Store
 

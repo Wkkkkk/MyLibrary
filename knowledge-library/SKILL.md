@@ -57,6 +57,21 @@ Run the wave loop; **stop and get sign-off at each 🚦 gate** (the playbook is 
 
 The bundled `schedule/wrapper.sh` is the one-command trigger (also runs by hand): zhihu-fetcher → inbox; `python -m librarian.update diff --out <library>` (net-new by url, no LLM); if new>0, dispatch a labeling wave + run `orchestrate.steady_state.finish` (ingest → materialize → verify → append a run-ledger row); write a digest from the ledger. Empty pulls cost zero LLM. Enable on a timer via `schedule/com.user.knowledge-library.plist` once trusted. **Cookie-expiry caveat:** see `references/lessons.md` — the run-ledger `status` surfaces a re-auth signal so a silent fetch failure doesn't rot the schedule. Check `python -m librarian.update status` anytime.
 
+## Semantic search (optional)
+
+Natural-language retrieval over the materialized library, powered by a local
+Qwen3-Embedding model via Ollama (see the `search:` block in `config.yaml`).
+
+- `python -m librarian.update index [--rebuild]` — build/refresh the vector
+  index. First run auto-pulls the model if missing (needs Ollama running).
+- `python -m librarian.update search "<query>" [--limit N] [--category C] [--topic T]`
+  — print the most relevant notes, ranked.
+- `python -m librarian.search.mcp_server` — expose a `search_library` MCP tool
+  for Claude or QwenPaw (requires `pip install mcp`).
+
+Steady-state refreshes the index automatically after each materialize.
+Run search commands under a Python with numpy installed (the same env as `pytest`).
+
 ## Invariants (the toolkit enforces; never bypass)
 
 Exactly one `primary_category` from the locked English canon; topics ∈ active canon (or declared in `proposed_topics`); no category-name or article_type in topics; materialize never overwrites; verify closes 0 ghosts / 0 gaps / label-count == manifest. Full list + the "why": `references/library-model.md` and `references/lessons.md`.

@@ -60,3 +60,16 @@ agents_per_wave: 4                       # parallel labeling agents per wave
 articles_per_agent: 15                   # articles each agent labels
 extractor_version: knowledge-library     # written to each label row's provenance column
 label_model: sonnet                      # model the skill passes to `claude -p` for labeling
+
+# SEMANTIC SEARCH (spec 2026-06-22) ---------------------------------------
+# Local Qwen3-Embedding (via Ollama) over the materialized library. Build the
+# index with `python -m librarian.update index`; query with
+# `python -m librarian.update search "<query>"`. Steady-state refreshes it.
+search:
+  embed_backend: ollama
+  ollama_host: http://localhost:11434
+  embed_model: qwen3-embedding:8b     # the exact pulled tag; `ollama list | grep qwen3-embedding`
+  embed_batch_size: 16
+  auto_pull: true                     # pull the model on first index if missing
+  index_path: search_index.db         # relative to data_dir
+  default_limit: 10
