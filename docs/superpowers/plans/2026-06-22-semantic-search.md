@@ -22,6 +22,15 @@
 - **Branch:** `feat/semantic-search` (already created). Commit after each task.
 - **Existing patterns to match:** TSV/store access via `librarian.store`/`librarian.tsv`; config via `librarian.config.Config`; CLI handlers follow `cmd_audit`/`cmd_materialize` in `update.py` (lazy submodule import inside the function).
 
+## Prerequisites: Ollama setup (runtime, not a code task)
+
+The unit suite never touches Ollama (it uses `FakeEmbedder`). These checks are for actually running `index`/`search` and the manual end-to-end:
+
+1. **Is Ollama installed?** `ollama --version` — if not, download from <https://ollama.com/download>.
+2. **Is the embedding model pulled?** `ollama list | grep qwen3-embedding` — if absent, `ollama pull qwen3-embedding:8b` (the `ensure_model` preflight in Task 3 also auto-pulls it on first `index` when `auto_pull: true`).
+
+Set `search.embed_model` in `config.yaml` to the exact tag you pulled (e.g. `qwen3-embedding:8b`). The `8b` tag is the highest-quality local option; `qwen3-embedding:4b`/`:0.6b` trade accuracy for speed/size.
+
 ---
 
 ### Task 1: Search settings resolver + config plumbing
@@ -1436,7 +1445,7 @@ Append to `knowledge-library/config.example.yaml`:
 search:
   embed_backend: ollama
   ollama_host: http://localhost:11434
-  embed_model: qwen3-embedding        # confirm the exact Ollama tag is pulled
+  embed_model: qwen3-embedding:8b     # the exact pulled tag; `ollama list | grep qwen3-embedding`
   embed_batch_size: 16
   auto_pull: true                     # pull the model on first index if missing
   index_path: search_index.db         # relative to data_dir
