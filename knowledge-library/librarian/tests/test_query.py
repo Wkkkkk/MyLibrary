@@ -37,11 +37,17 @@ def test_empty_index_returns_empty(tmp_path):
 def test_ranks_most_similar_first(tmp_path):
     cfg = _cfg(tmp_path)
     rows = [_article(cfg, "文学/a.md", "u-a", "alpha alpha", "文学", "诗", "h"),
-            _article(cfg, "文学/b.md", "u-b", "beta", "文学", "词", "h")]
+            _article(cfg, "文学/b.md", "u-b", "beta beta", "文学", "词", "h")]
     store.merge(cfg.labels_path, rows)
     _build(cfg)
-    out = query.search(cfg, from_config(cfg), FakeEmbedder(), "alpha alpha")
-    assert out[0].url == "u-b"  # FakeEmbedder gives u-b higher cosine similarity
+    # Query with article a's OWN embed text: its query vector is identical to
+    # a's stored vector, so cosine similarity is 1.0 — a must rank first by
+    # construction, independent of the embedder's internal hashing. A genuine
+    # ranking assertion, not a pin on whatever the fake happens to score first.
+    a_text = next(r["_text"] for r in indexer.build_inputs(cfg)[0]
+                  if r["url"] == "u-a")
+    out = query.search(cfg, from_config(cfg), FakeEmbedder(), a_text)
+    assert out[0].url == "u-a"
     assert out[0].score >= out[1].score
 
 
