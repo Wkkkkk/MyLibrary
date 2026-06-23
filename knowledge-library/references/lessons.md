@@ -30,6 +30,14 @@ Reading Chinese → emitting an English canon is reliable for a capable model, b
 
 The zhihu-fetcher runs locally where the cookie lives; an expired cookie makes a scheduled run fetch nothing **silently**. The run-ledger records `status` ∈ `ok | nothing_new | auth_failed | error`, so `python -m librarian.update status` surfaces a re-auth-needed signal as data — a silent failure can't rot the schedule unnoticed. The wrapper sets `auth_failed` on a fetch-side auth error; treat a run of `auth_failed`/`nothing_new` where you expected new articles as "re-login to Zhihu".
 
+## Labeling agent output constraints
+
+Two constraints that models routinely violate without explicit instruction:
+
+**`confidence` is an enum, not a float.** `contract.CONFIDENCE = {"high", "medium", "low"}`. Models default to writing `0.96` when asked for a confidence score; `ingest_wave` rejects every row. Always specify the three allowed strings in the labeling prompt.
+
+**`primary_category` must be from the locked category list, not the topic canon.** The two lists overlap thematically (e.g. `科技与社会` is an active topic, not a category). A model classifying an ambiguous article may pick a topic name as the category. `ingest_wave` catches this and says "is a topic name, not a category" — fix the JSON and re-run.
+
 ## Non-destructive, always
 
 `materialize` writes a **new** vault and refuses to overwrite hand-edited hub notes (no `generated:` marker) or a different article's file. The inbox/source is never mutated except the deliberate move-into-library step. If something looks wrong, the source is intact — re-run.
