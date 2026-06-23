@@ -25,6 +25,11 @@ def test_off_canon_primary_rejected(tmp_path):
     _, errors = validate.check([row(primary="不存在类")], ["文学/a.md"], reg(tmp_path), {"文学"})
     assert any("primary" in e for e in errors)
 
+def test_primary_is_topic_name_gives_hint(tmp_path):
+    # 文学评论 is an active topic — the error should say "topic" so the agent knows why
+    _, errors = validate.check([row(primary="文学评论")], ["文学/a.md"], reg(tmp_path), {"文学"})
+    assert any("topic" in e for e in errors)
+
 def test_unknown_topic_needs_proposal(tmp_path):
     _, errors = validate.check([row(topics="新话题")], ["文学/a.md"], reg(tmp_path), {"文学"})
     assert any("topic" in e for e in errors)

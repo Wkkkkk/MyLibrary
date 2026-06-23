@@ -25,7 +25,8 @@ def check(rows, expected_paths, reg, categories):
         if r[PATH_I] not in expected:
             errors.append(f"{tag}: path not in batch manifest (fabricated?): {r[PATH_I]}")
         if r[PRIMARY_I] not in categories:
-            errors.append(f"{tag}: primary off canon: {r[PRIMARY_I]!r}")
+            hint = " (is a topic name, not a category)" if r[PRIMARY_I] in reg.active_names() else ""
+            errors.append(f"{tag}: primary off canon: {r[PRIMARY_I]!r}{hint}")
         proposed = set(tsv.split_multi(r[PROPOSED_I]))
         topics = tsv.split_multi(r[TOPICS_I])
         for t in proposed - set(topics):

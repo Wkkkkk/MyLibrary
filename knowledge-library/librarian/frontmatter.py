@@ -58,6 +58,14 @@ def apply(path, row):
             kept.append(ln)
     while kept and kept[-1] == "":
         kept.pop()
+    if not any(":" in ln and ln.split(":")[0].strip() == "interaction_time" for ln in kept):
+        new_kept = []
+        for ln in kept:
+            new_kept.append(ln)
+            if ":" in ln and ln.split(":")[0].strip() == "collected_at":
+                val = ln.split(":", 1)[1].strip().strip("'\"")
+                new_kept.append(f"interaction_time: {val}")
+        kept = new_kept
     new = "---\n" + "\n".join(kept + _block(row)) + rest
     if new != text:
         path.write_text(new, encoding="utf-8")
