@@ -14,6 +14,17 @@ PATH_I = contract.LABEL_COLUMNS.index("relative_path")
 REVIEW_I = contract.LABEL_COLUMNS.index("needs_review")
 
 
+def _confidence(v):
+    """Accept float (0.0–1.0) or the canonical enum strings."""
+    if isinstance(v, float) or isinstance(v, int):
+        if v >= 0.7:
+            return "high"
+        if v >= 0.4:
+            return "medium"
+        return "low"
+    return str(v).strip()
+
+
 def _multi(v):
     """Agent JSON gives topics/tags/proposed as a list; join to the TSV form
     (deduped, '; '-separated). A bare string is passed through trimmed."""
@@ -51,7 +62,7 @@ def _row(j, frozen, cfg, today, run_id):
         _multi(j.get("tags", [])),
         str(j.get("article_type", "")).strip(),
         str(j.get("summary", "")).strip(),
-        str(j.get("confidence", "")).strip(),
+        _confidence(j.get("confidence", "")),
         "true" if j.get("needs_review") else "false",
         str(j.get("review_reason", "")).strip(),
         _multi(j.get("proposed_topics", [])),

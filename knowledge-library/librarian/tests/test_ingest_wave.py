@@ -163,6 +163,29 @@ def test_non_list_payload_is_reported(cfg, tmp_path):
     assert any("expected a JSON array" in e for e in summary["errors"])
 
 
+def test_float_confidence_is_normalized_to_enum(cfg, tmp_path):
+    cfg = _cfg(cfg)
+    j = _judgment()
+    j["confidence"] = 0.96          # agent wrote a float
+    jp = _write_json(tmp_path, [j])
+    summary = ingest_wave.ingest([jp], MANIFEST, {}, _reg(tmp_path), cfg, "2026-06-13")
+    assert summary["errors"] == []
+    assert summary["merged"] == 1
+    conf_i = contract.LABEL_COLUMNS.index("confidence")
+    assert store.load(cfg.labels_path)[0][conf_i] == "high"
+
+
+def test_float_confidence_low_boundary(cfg, tmp_path):
+    cfg = _cfg(cfg)
+    j = _judgment()
+    j["confidence"] = 0.3
+    jp = _write_json(tmp_path, [j])
+    summary = ingest_wave.ingest([jp], MANIFEST, {}, _reg(tmp_path), cfg, "2026-06-13")
+    assert summary["errors"] == []
+    conf_i = contract.LABEL_COLUMNS.index("confidence")
+    assert store.load(cfg.labels_path)[0][conf_i] == "low"
+
+
 def test_item_missing_relative_path_is_reported(cfg, tmp_path):
     cfg = _cfg(cfg)
     j = _judgment()

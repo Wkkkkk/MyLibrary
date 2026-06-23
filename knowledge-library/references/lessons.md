@@ -34,7 +34,7 @@ The zhihu-fetcher runs locally where the cookie lives; an expired cookie makes a
 
 Two constraints that models routinely violate without explicit instruction:
 
-**`confidence` is an enum, not a float.** `contract.CONFIDENCE = {"high", "medium", "low"}`. Models default to writing `0.96` when asked for a confidence score; `ingest_wave` rejects every row. Always specify the three allowed strings in the labeling prompt.
+**`confidence` accepts both floats and the enum strings.** `contract.CONFIDENCE = {"high", "medium", "low"}`. `ingest_wave` normalises floats automatically (≥0.7 → "high", ≥0.4 → "medium", else "low"), so either form works. Prefer specifying the three strings in prompts to avoid any ambiguity.
 
 **`primary_category` must be from the locked category list, not the topic canon.** The two lists overlap thematically (e.g. `科技与社会` is an active topic, not a category). A model classifying an ambiguous article may pick a topic name as the category. `ingest_wave` catches this and says "is a topic name, not a category" — fix the JSON and re-run.
 
