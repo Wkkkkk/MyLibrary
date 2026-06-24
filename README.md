@@ -28,6 +28,55 @@ files new items on a schedule.
   local Qwen3-Embedding model (Ollama); index with `python -m librarian.update index`, query with
   `python -m librarian.update search`, or expose as an MCP tool for Claude.
 
+## Day-to-day: adding new articles
+
+### Fully automatic (recommended)
+
+A launchd agent (`adopt/com.kunwu.knowledge-library.plist`) runs the pipeline every Friday at 10:00. Empty inbox = zero LLM cost.
+
+**Install once:**
+
+```sh
+# Verify it works by hand first
+KNOWLEDGE_LIBRARY_CONFIG=/Users/kunwu/Workspace/MyLibrary/adopt/config.yaml \
+LIBRARY=/Users/kunwu/Obsidian/知乎收藏_v2 \
+bash knowledge-library/schedule/wrapper.sh
+
+# Install the agent
+cp adopt/com.kunwu.knowledge-library.plist ~/Library/LaunchAgents/
+launchctl load ~/Library/LaunchAgents/com.kunwu.knowledge-library.plist
+```
+
+After that: drop articles into `adopt/inbox/` and the pipeline runs on its own.
+
+```sh
+# Watch the logs
+tail -f knowledge-library/logs/launchd.out.log
+
+# Check run history and queue sizes anytime
+KNOWLEDGE_LIBRARY_CONFIG=adopt/config.yaml python -m librarian.update status
+```
+
+**Disable:**
+
+```sh
+launchctl unload ~/Library/LaunchAgents/com.kunwu.knowledge-library.plist
+```
+
+### Manual trigger (one-off)
+
+```sh
+KNOWLEDGE_LIBRARY_CONFIG=/Users/kunwu/Workspace/MyLibrary/adopt/config.yaml \
+LIBRARY=/Users/kunwu/Obsidian/知乎收藏_v2 \
+bash knowledge-library/schedule/wrapper.sh
+```
+
+### Natural language prompt (to Claude Code)
+
+```
+New zhihu articles have been added to adopt/inbox/. Run steady-state ingest and update the semantic search index.
+```
+
 ## Status
 
 **Complete and merged to `main`; live in production.** Plans 1–5 (toolkit de-hardcode, ingest
