@@ -1,5 +1,29 @@
 import re
+from datetime import datetime
+
 from librarian import tsv
+
+# A bare calendar date with no time component (e.g. "2026-06-23").
+_DATE_ONLY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _interaction_time(val):
+    """Value to inject as interaction_time, derived from collected_at.
+
+    Obsidian Bases sorts the `_view.base` "按互动时间" table on interaction_time
+    as a *datetime*; a bare date (no time component) is a type mismatch and the
+    row drops out of that view. Local/storm sources often supply only a date, so
+    promote a date-only value to 09:00 local time (keeping the host's UTC offset)
+    so it sorts as a datetime. Values that already carry a time component — or
+    that aren't a plain date — pass through unchanged.
+    """
+    if not _DATE_ONLY.match(val):
+        return val
+    try:
+        dt = datetime.strptime(val, "%Y-%m-%d").replace(hour=9)
+    except ValueError:
+        return val
+    return dt.astimezone().isoformat()
 
 # `category` is managed (stripped): the source `category:` is a now-redundant
 # duplicate of the canonical primary_category (its value is preserved as
@@ -64,7 +88,7 @@ def apply(path, row):
             new_kept.append(ln)
             if ":" in ln and ln.split(":")[0].strip() == "collected_at":
                 val = ln.split(":", 1)[1].strip().strip("'\"")
-                new_kept.append(f"interaction_time: {val}")
+                new_kept.append(f"interaction_time: {_interaction_time(val)}")
         kept = new_kept
     new = "---\n" + "\n".join(kept + _block(row)) + rest
     if new != text:
