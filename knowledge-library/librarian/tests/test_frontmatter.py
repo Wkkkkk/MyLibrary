@@ -1,3 +1,5 @@
+import re
+
 from librarian import frontmatter
 
 ART = """---
@@ -53,6 +55,35 @@ def test_collected_at_injects_interaction_time(tmp_path):
     text = p.read_text(encoding="utf-8")
     assert "interaction_time: 2026-06-21T09:00:07+02:00" in text
     assert text.count("interaction_time:") == 1
+
+
+def test_date_only_collected_at_promoted_to_datetime(tmp_path):
+    """A date-only collected_at (no time component) must inject an
+    interaction_time promoted to a full datetime, so it sorts as a datetime
+    in Obsidian Bases views. A bare date drops out of the datetime-sorted view,
+    which is the bug that hid local/storm articles from the _view.base table."""
+    art = (
+        "---\n"
+        "source: local\n"
+        "title: Some Video\n"
+        "collected_at: '2026-06-23'\n"
+        "duration: 09:01\n"
+        "---\n\n# body\n"
+    )
+    p = tmp_path / "a.md"
+    p.write_text(art, encoding="utf-8")
+    assert frontmatter.apply(p, row()) == "written"
+    text = p.read_text(encoding="utf-8")
+    assert text.count("interaction_time:") == 1
+    m = re.search(r"^interaction_time: (.+)$", text, re.M)
+    assert m, "interaction_time was not injected"
+    val = m.group(1).strip()
+    # promoted to a datetime: carries a time component, anchored at 09:00 on the
+    # original date (optional local UTC offset depending on the host timezone).
+    assert "T" in val, f"date-only value not promoted to a datetime: {val!r}"
+    assert val.startswith("2026-06-23T09:00:00"), val
+    # collected_at itself is left untouched (still the original bare date).
+    assert "collected_at: '2026-06-23'" in text
 
 
 def test_existing_interaction_time_not_duplicated(tmp_path):
