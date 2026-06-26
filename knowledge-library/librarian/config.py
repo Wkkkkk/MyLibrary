@@ -92,8 +92,17 @@ class Config:
 
 def load(path):
     """Read a config.yaml file into a Config. Unknown keys are ignored; missing
-    optional keys fall back to dataclass defaults."""
-    raw = yaml.safe_load(Path(path).expanduser().read_text(encoding="utf-8")) or {}
+    optional keys fall back to dataclass defaults. A `base:` key merges a base
+    config file first; keys in the current file override the base."""
+    path = Path(path).expanduser()
+    raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if "base" in raw:
+        base_path = Path(raw.pop("base")).expanduser()
+        if not base_path.is_absolute():
+            base_path = path.parent / base_path
+        base_raw = yaml.safe_load(base_path.read_text(encoding="utf-8")) or {}
+        base_raw.update(raw)
+        raw = base_raw
     kwargs = dict(
         corpus_path=Path(raw["corpus_path"]).expanduser(),
         library_path=Path(raw["library_path"]).expanduser(),
